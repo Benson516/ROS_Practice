@@ -81,48 +81,50 @@ $ source ~/.bashrc
 $ sudo apt-get install ros-indigo-gazebo-ros-pkgs ros-indigo-gazebo-msgs ros-indigo-gazebo-plugins ros-indigo-gazebo-ros-control
 ```
 
-2.Moveit!
+2. Moveit!
 ```
 $ sudo apt-get install ros-indigo-moveit-full
 ```
 
-3.Navigation Stack
+3. Navigation Stack
 ```
 $ sudo apt-get install ros-indigo-navigation
 ```
 
-4.Joy (joystick)
+4. Joy (joystick)
 ```
 $ sudo apt-get install ros-indigo-joy
 ```
 ##Get Files and Examples from Github
 
-1.My Programs for practicing ROS at github
+1. My Programs for practicing ROS at github
 ```
 $ cd catkin_ws
 $ git clone https://github.com/Benson516/ROS_Practice.git
 ```
 
-2.Examples in "Mastering ROS for Robotic Programing"
+2. Examples in "Mastering ROS for Robotic Programing"
 ```
 $ cd ~
 $ git clone https://github.com/Benson516/mastering_ros.git
 ```
 
 ##Git Setup
-1.Initiate the git in Ubuntu
+1. Initiate the git in Ubuntu
 ```
-  $ git config --global user.name "Benson516"
-  $ git config --global user.email "benson516@hotmail.com"
+$ git config --global user.name "Benson516"
+$ git config --global user.email "benson516@hotmail.com"
 ```
-2.Set up the git for workingspace
+
+2. Set up the git for workingspace
 Inside the ~/catkin_ws/src
 ```
 $ git init
 $ git add .
 $ git commit -m "First backup from another computer"
 ```
-3.Connect to github
+
+3. Connect to github
 ```
 $ git remote add origin https://github.com/Benson516/ROS_Practice.git
 $ git push -u origin master

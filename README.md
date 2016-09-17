@@ -81,6 +81,15 @@ Download from http://www.ubuntu.com/download
     ```
     $ sudo apt-get install ros-indigo-gazebo-ros-pkgs ros-indigo-gazebo-msgs ros-indigo-gazebo-plugins ros-indigo-gazebo-ros-control
     ```
+    
+    Models for Gazebo 2.2
+    (see http://answers.ros.org/question/199401/problem-with-indigo-and-gazebo-22/)
+    
+    ```
+    $ wget -r -R "index\.html*" http://models.gazebosim.org/
+    ```
+    
+    Copy them (the download place is inside `~/.gazebo/`) into `~/.gazebo/models` folder (after you mkdir models inside `~/.gazebo`) and everything will be ok.
 
 2. Moveit!
     ```

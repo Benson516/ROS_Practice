@@ -5,4 +5,4 @@ moveit_setup_assistant_config:
   SRDF:
     relative_path: config/seven_dof_arm.srdf
   CONFIG:
-    generated_timestamp: 1471804850
+    generated_timestamp: 1474195526

@@ -100,8 +100,12 @@ Download from http://www.ubuntu.com/download
     ```
     $ sudo apt-get install ros-indigo-navigation
     ```
+4. Gmapping
+    ```
+    $ sudo apt-get install ros-indigo-gmapping
+    ```
 
-4. Joy (joystick)
+5. Joy (joystick)
     ```
     $ sudo apt-get install ros-indigo-joy
     ```

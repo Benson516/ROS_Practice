@@ -127,8 +127,9 @@ Download from http://www.ubuntu.com/download
     $ git config --global user.email "benson516@hotmail.com"
     ```
     
-2. Clone this repository under /catkin_ws
+2. Clone this repository under **/catkin_ws**
     ```
+    $ cd /catkin_ws
     $ git clone https://github.com/Benson516/ROS_Practice.git
     ```
     

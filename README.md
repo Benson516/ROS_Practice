@@ -126,17 +126,14 @@ Download from http://www.ubuntu.com/download
     $ git config --global user.name "Benson516"
     $ git config --global user.email "benson516@hotmail.com"
     ```
+    
+2. Clone this repository under /catkin_ws
+    ```
+    $ git clone https://github.com/Benson516/ROS_Practice.git
+    ```
+    
+3. Rename the directory to **src**
+    ```
+    $ mv ROS_Practice src
+    ```
 
-2. Set up the git for workingspace
-    (Inside the ~/catkin_ws/src)
-    ```
-    $ git init
-    $ git add .
-    $ git commit -m "First backup from another computer"
-    ```
-
-3. Connect to github
-    ```
-    $ git remote add origin https://github.com/Benson516/ROS_Practice.git
-    $ git push -u origin master
-    ```

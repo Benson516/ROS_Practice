@@ -105,7 +105,12 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install ros-indigo-gmapping
     ```
 
-5. Joy (joystick)
+5. Joint_state_controller
+    ```
+    $ sudo apt-get install ros-indigo-joint-state-controller
+    ```
+
+6. Joy (joystick)
     ```
     $ sudo apt-get install ros-indigo-joy
     ```

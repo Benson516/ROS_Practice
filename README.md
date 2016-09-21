@@ -110,20 +110,6 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install ros-indigo-joy
     ```
 
-##Get Files and Examples from Github
-
-1. My Programs for practicing ROS at github
-    ```
-    $ cd catkin_ws
-    $ git clone https://github.com/Benson516/ROS_Practice.git
-    ```
-
-2. Examples in "Mastering ROS for Robotic Programing"
-    ```
-    $ cd ~
-    $ git clone https://github.com/Benson516/mastering_ros.git
-    ```
-
 ##Git Setup
 1. Initiate the git in Ubuntu
     ```
@@ -142,3 +128,16 @@ Download from http://www.ubuntu.com/download
     $ mv ROS_Practice src
     ```
 
+##Get Files and Examples from Github
+
+1. My Programs for practicing ROS at github
+    ```
+    $ cd catkin_ws
+    $ git clone https://github.com/Benson516/ROS_Practice.git
+    ```
+
+2. Examples in "Mastering ROS for Robotic Programing"
+    ```
+    $ cd ~
+    $ git clone https://github.com/Benson516/mastering_ros.git
+    ```

@@ -1,0 +1,15 @@
+<launch>
+
+<!-- Start the robot's simulation in Gazebo -->
+<include file="$(find diff_wheeled_robot_gazebo)/launch/diff_wheeled_gazebo_full.launch"/>
+
+<!-- Start the teleop node -->
+<include file="$(find diff_wheeled_robot_control)/launch/keyboard_teleop.launch"/>
+
+<!-- Start the Gmapping -->
+<!-- include file="$(find diff_wheeled_robot_gazebo)/launch/gmapping.launch"/ -->
+
+<!-- Start Rviz -->
+<node name="rviz" pkg="rviz" type="rviz"/>
+
+</launch>

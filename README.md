@@ -115,6 +115,7 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install ros-indigo-joy
     ```
 7. USB camera
+
     ```
     $ sudo apt-get install ros-indigo-usb-camera
     ```

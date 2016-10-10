@@ -119,6 +119,11 @@ Download from http://www.ubuntu.com/download
     ```
     $ sudo apt-get install ros-indigo-usb-camera
     ```
+8. Depthimage to laserscan
+
+    ```
+    $ sudo apt-get install ros-indigo-depthimage-to-laserscan
+    ``` 
 
 ##Git Setup
 1. Initiate the git in Ubuntu

@@ -11,13 +11,15 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 catkin_package()
+
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
 
 add_executable(sample_cv_bridge_node src/sample_cv_bridge_node.cpp)
- target_link_libraries(sample_cv_bridge_node
+
+target_link_libraries(sample_cv_bridge_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
  )

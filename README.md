@@ -13,7 +13,7 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get update
     $ sudo apt-get install vim
     ```
-##Install ROS-Indigo
+## Install ROS-Indigo
 
 (see http://wiki.ros.org/indigo/Installation/Ubuntu)
 
@@ -33,7 +33,7 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install ros-indigo-desktop-full
     ```
 
-##Setup ROS
+## Setup ROS
 1. Initialize ROSdep 
 (rosdep enables you to easily install system dependencies for source you want to compile and is required to run some core components in ROS.)
     ```
@@ -52,7 +52,7 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install python-rosinstall
     ```
 
-##Create and Setup a ROS Workspace
+## Create and Setup a ROS Workspace
 (see http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment)
 
 1. Create the workspace
@@ -75,7 +75,7 @@ Download from http://www.ubuntu.com/download
     $ source ~/.bashrc
     ```
 
-##Installation of Some ROS Packages
+## Installation of Some ROS Packages
 
 1. Gazebo-ROS Interface
     ```
@@ -125,7 +125,8 @@ Download from http://www.ubuntu.com/download
     $ sudo apt-get install ros-indigo-depthimage-to-laserscan
     ``` 
 
-##Git Setup
+## Git Setup
+
 1. Initiate the git in Ubuntu
     ```
     $ git config --global user.name "Benson516"
@@ -143,7 +144,7 @@ Download from http://www.ubuntu.com/download
     $ mv ROS_Practice src
     ```
 
-##Get Files and Examples from Github
+## Get Files and Examples from Github
 
 1. My Programs for practicing ROS at github
     ```

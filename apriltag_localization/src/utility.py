@@ -4,7 +4,9 @@ Utility functions for manipulating poses in ROS.
 Used mostly for extending coordinate transformations beyond the scope of transformations.py.
 Written by Alex Zhu (alexzhu(at)seas.upenn.edu)
 """
-
+# ROS imports
+import roslib
+import rospy
 import numpy as np
 
 import roslib

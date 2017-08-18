@@ -32,7 +32,8 @@ class KalmanFilter:
         self.last_time = None # Used to keep track of time between measurements
         self.Q_t = np.eye(2)
         self.Q_t[0,0] = 100.0
-        self.R_t = np.eye(3)*(10.0**(-3))
+        # self.R_t = np.eye(3)*(10.0**(-3))
+        self.R_t = np.eye(3)*(10.0**(-6))
 
         # YOUR CODE HERE
         self.n = 3 # Number of states
@@ -226,11 +227,17 @@ class KalmanFilter:
         # Update mean
         temp_error = np.zeros((3,1))
         for i in range(num_markers):
-            # print type(z_meas[i])
-            # print (z_meas[i]).shape
-            temp_error += z_meas[i] - self.mu_est
+            """
+            print type(z_meas[i])
+            print (z_meas[i]).shape
+            print type(self.mu_est)
+            print (self.mu_est).shape
+            print type(temp_error)
+            print (temp_error).shape
+            """
+            temp_error = temp_error + (z_meas[i] - self.mu_est)
 
-        self.mu_est += self.Kt.dot(temp_error)
+        self.mu_est = self.mu_est + self.Kt.dot(temp_error)
 
         # print "Sigma_est",self.Sigma_est
 

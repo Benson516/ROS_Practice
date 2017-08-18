@@ -20,7 +20,7 @@ from apriltags_ros.msg import (
 from geometry_msgs.msg import (
     PoseArray,
     PoseStamped,
-    PoseWithCovarianceStamped
+    PoseWithCovarianceStamped,
     Pose,
     Quaternion,
     PoseWithCovariance,
@@ -62,14 +62,14 @@ class ROSInterface(object):
         # ROS publishers and subscribers
         rospy.Subscriber("/%s/tag_detections" % camera_frame_id, AprilTagDetectionArray,self._tag_pose_callback)
         # amcl
-        rospy.Subscriber("/amcl_pose", geometry_msgs/PoseWithCovarianceStamped, self.amcl_pose_CB)
-        self._pub_init_amcl = rospy.Publisher('/initialpose', geometry_msgs/PoseWithCovarianceStamped, queue_size=10)
+        rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.amcl_pose_CB)
+        self._pub_init_amcl = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=10)
         #
         self._amcl_poseStamp = None # Header()
         self._amcl_pose = None # Pose()
         self._amcl_cov = None # np.eye(6)
         #
-        self._T_subState = np.zers((3,6))
+        self._T_subState = np.zeros((3,6))
         self._T_subState[0,0] = 1.0
         self._T_subState[1,1] = 1.0
         self._T_subState[2,5] = 1.0
@@ -124,6 +124,7 @@ class ROSInterface(object):
             pose_2D[0,0] = self._amcl_pose.position.x
             pose_2D[1,0] = self._amcl_pose.position.y
             #
+            pose = self._amcl_pose
             quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
             euler = tf.transformations.euler_from_quaternion(quaternion)
             # roll = euler[0]

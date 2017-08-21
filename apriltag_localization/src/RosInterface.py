@@ -54,10 +54,13 @@ class ROSInterface(object):
         self._R = list() # None
         self.angle = list() # None
         self._marker_num = list() # None
+
+        # _R_tag_2_tag1: rotate +180 deg about x-axis
+        # self._R_tag_2_tag1 = np.array([[1,0,0,0],[0,-1,0,0],[0,0,-1,0],[0,0,0,1]])
         #
         self._R_cam2bot = np.array([[0,0,1,0],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
         self._t_cam2bot = np.concatenate((t_cam_to_body,np.array([[1]])), axis=0)
-        self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
+        # self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
 
         # TODO: change the following hard coded camera name.
         # camera_frame_id = "usb_cam"
@@ -99,8 +102,8 @@ class ROSInterface(object):
             (_t_tag_2_cam, _R_tag_2_cam) = get_t_R(posearray.detections[kk].pose.pose)
             # TODO: Modify the following lines if the tag is pasted on the ceil.
             #-----------------------------#
-            _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
-            if math.isnan(_angle_tag_2_bot):
+            _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
+            if _angle_tag_2_bot is None:
                 return
             # _R_tag_2_bot = np.dot(np.dot(self._R_cam2bot, _R_tag_2_cam),self._R_tag2bot)
             # _R_tag_2_bot = np.dot(self._R_cam2bot, _R_tag_2_cam)
@@ -114,6 +117,23 @@ class ROSInterface(object):
         #
         self._no_detection = False
         self.num_detections = num_detections
+
+    def get_angle_tag_2_cam_from_R(self, _R_tag_2_cam):
+
+        # Case 1: The tags are pasted on the wall
+        # _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
+
+        # Case 2: The tags are pasted on the ceil
+        # _R_tag1_2_cam = self._R_tag_2_tag1.dot(_R_tag_2_cam)
+        _angle_tag_2_bot = np.arctan2(-_R_tag_2_cam[1,0], _R_tag_2_cam[0,0])
+
+        # Prevent the sigularity
+        if math.isnan(_angle_tag_2_bot):
+            return None
+        else:
+            return _angle_tag_2_bot
+
+
 
     def get_measurements(self):
         """

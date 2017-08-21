@@ -30,10 +30,18 @@ class KalmanFilter:
         """
         self.markers = markers
         self.last_time = None # Used to keep track of time between measurements
+
+        # Covariance for motion
         self.Q_t = np.eye(2)
         self.Q_t[0,0] = 100.0
+        # self.Q_t[1,1] = 1.0
+
+        # Covariance for measurements
         # self.R_t = np.eye(3)*(10.0**(-3))
-        self.R_t = np.eye(3)*(10.0**(-6))
+        self.R_t = np.eye(3)*(10.0**(-3))
+
+        # The threshold of each covariance
+        self.cov_threshold = [0.025**2, 0.025**2, (0.5*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
 
         # YOUR CODE HERE
         self.n = 3 # Number of states
@@ -194,7 +202,8 @@ class KalmanFilter:
         print "num_markers =",num_markers
         # print type(z_t[0]) # list
 
-        z_meas = list()
+        # Calculate the pose-measurement by each apriltag
+        x_meas_apriltag_list = list()
         for meas in z_t:
             id_marker = int(meas[3])
             H_robot_2_marker = np.linalg.inv(self.Homography((meas[0],meas[1],meas[2])))
@@ -215,42 +224,56 @@ class KalmanFilter:
                 theta_meas += pi_2
 
             print "x_meas =",x_meas, "y_meas =",y_meas, "theta_meas =",theta_meas
-            z_meas.append(np.array([[x_meas], [y_meas], [theta_meas]])) # 3 by 1
+            x_meas_apriltag_list.append(np.array([[x_meas], [y_meas], [theta_meas]])) # 3 by 1
 
-        # print (z_meas[0]).shape
+        # print (x_meas_apriltag_list[0]).shape
 
         # Update the Kalman gain
         temp = self.dhx_dx.dot(self.Sigma_est).dot(self.dhx_dx.transpose()) + self.R_t
         self.Kt = self.Sigma_est.dot(self.dhx_dx.transpose()).dot(np.linalg.inv(temp))
         self.Kt = self.Kt*(1.0/num_markers)
 
-        # Update mean
+        # Calculate the pose-error related to each measured-pose by apriltag
         temp_error = np.zeros((3,1))
         for i in range(num_markers):
             """
-            print type(z_meas[i])
-            print (z_meas[i]).shape
+            print type(x_meas_apriltag_list[i])
+            print (x_meas_apriltag_list[i]).shape
             print type(self.mu_est)
             print (self.mu_est).shape
             print type(temp_error)
             print (temp_error).shape
             """
-            temp_error = temp_error + (z_meas[i] - self.mu_est)
-
+            delta_x = (x_meas_apriltag_list[i] - self.mu_est)
+            pi_2 = 2.0*np.pi
+            if delta_x[2,0] > np.pi:
+                delta_x[2,0] -= pi_2
+            elif delta_x[2,0] < -np.pi:
+                delta_x[2,0] += pi_2
+            temp_error = temp_error + delta_x
+        # Update mean
         self.mu_est = self.mu_est + self.Kt.dot(temp_error)
 
         # print "Sigma_est",self.Sigma_est
 
         # Update the covariance matrix
-        # temp_matrix = num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
-        # print "temp_matrix",temp_matrix
-        self.Sigma_est -= num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
-
+        is_converged = False
+        for kk in range(self.n):
+            if self.Sigma_est[kk,kk] <= self.cov_threshold[kk]:
+                is_converged = True
+        #
+        if is_converged:
+            # No update for the covariance matrix
+            pass
+        else:
+            # Update the covariance matrix
+            # temp_matrix = num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
+            # print "temp_matrix",temp_matrix
+            self.Sigma_est -= num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
         #
         # print "Kt",self.Kt
         # print "mu_est",self.mu_est
         # print "Sigma_est",self.Sigma_est
-
         return (self.mu_est, self.Sigma_est)
 
     def step_filter(self, v, imu_meas, z_t, time_now):

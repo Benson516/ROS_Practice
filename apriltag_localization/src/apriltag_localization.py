@@ -52,7 +52,8 @@ class ApriltagLocalization(object):
         # amcl_pose = self.ros_interface.get_amcl_pose()
 
         print '-----------------'
-        print 'tag:',tag_measurement
+        print 'tag:'
+        print tag_measurement
 
         #----------------------------------------#
         # self.time = rospy.get_time()

@@ -49,13 +49,15 @@ class ROSInterface(object):
         """
         # Internal variables
         self._no_detection = True
-        self._t = None
-        self._R = None
+        self.num_detections = 0
+        self._t = list() # None
+        self._R = list() # None
+        self.angle = list() # None
+        self._marker_num = list() # None
         #
         self._R_cam2bot = np.array([[0,0,1,0],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
         self._t_cam2bot = np.concatenate((t_cam_to_body,np.array([[1]])), axis=0)
-        #
-        # self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
+        self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
 
         # TODO: change the following hard coded camera name.
         # camera_frame_id = "usb_cam"
@@ -79,36 +81,56 @@ class ROSInterface(object):
         """
         Callback function for AprilTag measurements
         """
-        if (len(posearray.detections)==0):
+        num_detections = len(posearray.detections)
+        if (num_detections == 0):
             return
 
-        # TODO: Modify the dollowing line for multiple tag detection
-        (self._t, self._R) = get_t_R(posearray.detections[0].pose.pose)
+        #
+        self._R = list()
+        self._t = list()
+        self._angle = list()
+        self._marker_num = list()
 
-        # TODO: Modify the following line if the tag is pasted on the ceil.
-        #-----------------------------#
-        self._angle = -np.arctan2(-self._R[2,0],np.sqrt(self._R[2,0]**2+self._R[2,2]**2))
-        if math.isnan(self._angle):
-            return
-        #-----------------------------#
-
-        # self._R = np.dot(np.dot(self._R_cam2bot, self._R),self._R_tag2bot)
-        self._t = np.dot(self._R_cam2bot, self._t) + self._t_cam2bot
-
-        self._marker_num = posearray.detections[0].id
+        # Multiple tags detection
+        for kk in range(num_detections):
+            # Get id
+            _marker_num = posearray.detections[kk].id
+            # Get R and t
+            (_t_tag_2_cam, _R_tag_2_cam) = get_t_R(posearray.detections[kk].pose.pose)
+            # TODO: Modify the following lines if the tag is pasted on the ceil.
+            #-----------------------------#
+            _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
+            if math.isnan(_angle_tag_2_bot):
+                return
+            # _R_tag_2_bot = np.dot(np.dot(self._R_cam2bot, _R_tag_2_cam),self._R_tag2bot)
+            # _R_tag_2_bot = np.dot(self._R_cam2bot, _R_tag_2_cam)
+            _t_tag_2_bot = np.dot(self._R_cam2bot, _t_tag_2_cam) + self._t_cam2bot
+            #-----------------------------#
+            #
+            self._R.append(_R_tag_2_cam)
+            self._t.append(_t_tag_2_bot)
+            self._angle.append(_angle_tag_2_bot)
+            self._marker_num.append(_marker_num)
+        #
         self._no_detection = False
+        self.num_detections = num_detections
 
     def get_measurements(self):
         """
-        Returns information about the last tag seen if any. Returns (x,y,theta) as a
-        3x1 numpy array. Returns None if no new tag is seen.
+        Returns information about the last tag seen if any. Returns a list of Python list
+        in the format of (x,y,theta,id). Returns None if no new tag is seen.
         """
         if self._no_detection:
             return None
         self._no_detection = True
-        dx = self._t[0,0]
-        dy = self._t[1,0]
-        return [[dx,dy,self._angle,self._marker_num]]
+
+        # Note all tags are represented in robot's coordinate
+        tag_list = list()
+        for kk in range(self.num_detections):
+            dx = self._t[kk][0,0]
+            dy = self._t[kk][1,0]
+            tag_list.append([dx,dy,self._angle[kk],self._marker_num[kk]])
+        return tag_list
 
     def amcl_pose_CB(self, PoseWithCovarianceStamped):
         self._amcl_poseStamp = PoseWithCovarianceStamped.header

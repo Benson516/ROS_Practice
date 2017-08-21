@@ -99,8 +99,8 @@ class ROSInterface(object):
             # Get id
             _marker_num = posearray.detections[kk].id
             # Get R and t
+            # _t_tag_2_cam is in camera fram
             (_t_tag_2_cam, _R_tag_2_cam) = get_t_R(posearray.detections[kk].pose.pose)
-            # TODO: Modify the following lines if the tag is pasted on the ceil.
             #-----------------------------#
             _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
             if _angle_tag_2_bot is None:
@@ -119,13 +119,14 @@ class ROSInterface(object):
         self.num_detections = num_detections
 
     def get_angle_tag_2_cam_from_R(self, _R_tag_2_cam):
+        # Modify the following lines if the tag is pasted on the ceil.
 
         # Case 1: The tags are pasted on the wall
         # _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
 
         # Case 2: The tags are pasted on the ceil
         # _R_tag1_2_cam = self._R_tag_2_tag1.dot(_R_tag_2_cam)
-        _angle_tag_2_bot = np.arctan2(-_R_tag_2_cam[1,0], _R_tag_2_cam[0,0])
+        _angle_tag_2_bot = np.arctan2(_R_tag_2_cam[1,0], _R_tag_2_cam[0,0])
 
         # Prevent the sigularity
         if math.isnan(_angle_tag_2_bot):
@@ -146,7 +147,7 @@ class ROSInterface(object):
 
         # Note all tags are represented in robot's coordinate
         tag_list = list()
-        for kk in range(self.num_detections):
+        for kk in range(len(self._t)): # range(self.num_detections):
             dx = self._t[kk][0,0]
             dy = self._t[kk][1,0]
             tag_list.append([dx,dy,self._angle[kk],self._marker_num[kk]])

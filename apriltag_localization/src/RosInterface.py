@@ -47,6 +47,9 @@ class ROSInterface(object):
         """
         Initialize the class
         """
+        # Is the camera installed on top or at front-side?
+        self.camera_top_and_tag_top = True
+
         # Internal variables
         self._no_detection = True
         self.num_detections = 0
@@ -57,12 +60,17 @@ class ROSInterface(object):
 
         # _R_tag_2_tag1: rotate +180 deg about x-axis
         # self._R_tag_2_tag1 = np.array([[1,0,0,0],[0,-1,0,0],[0,0,-1,0],[0,0,0,1]])
+
+        if self.camera_top_and_tag_top:
+            # Camera installed on the top
+            self._R_cam2bot = np.array([[0,-1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]])
+        else:
+            # Camera installed at fron-side
+            self._R_cam2bot = np.array([[0,0,1,0],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
         #
-        self._R_cam2bot = np.array([[0,0,1,0],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
         self._t_cam2bot = np.concatenate((t_cam_to_body,np.array([[1]])), axis=0)
         # self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
 
-        # TODO: change the following hard coded camera name.
         # camera_frame_id = "usb_cam"
         # ROS publishers and subscribers
         rospy.Subscriber("/%s/tag_detections" % camera_frame_id, AprilTagDetectionArray,self._tag_pose_callback)
@@ -120,13 +128,13 @@ class ROSInterface(object):
 
     def get_angle_tag_2_cam_from_R(self, _R_tag_2_cam):
         # Modify the following lines if the tag is pasted on the ceil.
-
-        # Case 1: The tags are pasted on the wall
-        # _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
-
-        # Case 2: The tags are pasted on the ceil
-        # _R_tag1_2_cam = self._R_tag_2_tag1.dot(_R_tag_2_cam)
-        _angle_tag_2_bot = np.arctan2(_R_tag_2_cam[1,0], _R_tag_2_cam[0,0])
+        if self.camera_top_and_tag_top:
+            # Case 1: The tags are pasted on the ceil
+            # _R_tag1_2_cam = self._R_tag_2_tag1.dot(_R_tag_2_cam)
+            _angle_tag_2_bot = np.arctan2(_R_tag_2_cam[1,0], _R_tag_2_cam[0,0])
+        else:
+            # Case 2: The tags are pasted on the wall
+            _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
 
         # Prevent the sigularity
         if math.isnan(_angle_tag_2_bot):

@@ -32,8 +32,37 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): i
     sensor_frame_id_ = "";
   }
 
-  AprilTags::TagCodes tag_codes = AprilTags::tagCodes36h11;
-  tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(tag_codes));
+  // Get the tag_family from param
+  std::string tag_family;
+  pnh.param<std::string>("tag_family", tag_family, "36h11");
+
+  // pnh.param<bool>("projected_optics", projected_optics_, false);
+
+  // Get tagCodes
+  const AprilTags::TagCodes* tag_codes;
+  if(tag_family == "16h5"){
+    tag_codes = &AprilTags::tagCodes16h5;
+  }
+  else if(tag_family == "25h7"){
+    tag_codes = &AprilTags::tagCodes25h7;
+  }
+  else if(tag_family == "25h9"){
+    tag_codes = &AprilTags::tagCodes25h9;
+  }
+  else if(tag_family == "36h9"){
+    tag_codes = &AprilTags::tagCodes36h9;
+  }
+  else if(tag_family == "36h11"){
+    tag_codes = &AprilTags::tagCodes36h11;
+  }
+  else{
+    ROS_WARN("Invalid tag family specified; defaulting to 36h11");
+    tag_codes = &AprilTags::tagCodes36h11;
+  }
+
+  tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
+  // AprilTags::TagCodes tag_codes = AprilTags::tagCodes36h11;
+  // tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(tag_codes));
   image_sub_ = it_.subscribeCamera("image_rect", 1, &AprilTagDetector::imageCb, this);
   image_pub_ = it_.advertise("tag_detections_image", 1);
   detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
@@ -57,6 +86,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray);
   ROS_DEBUG("%d tag detected", (int)detections.size());
 
+  // use projected focal length and principal point
+  // these are the correct values
   double fx = cam_info->P[0];
   double fy = cam_info->P[5];
   double px = cam_info->P[2];

@@ -99,6 +99,7 @@ def make_pose_covariance_stamped_msg_quat(t, quat, Cov):
     pose_msg.position.z = t[2]
     #
     # quat = quaternion_from_matrix(R)
+    # print "quat", quat
     pose_msg.orientation.x = quat[0]
     pose_msg.orientation.y = quat[1]
     pose_msg.orientation.z = quat[2]

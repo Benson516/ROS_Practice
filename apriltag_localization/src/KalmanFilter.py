@@ -39,12 +39,12 @@ class KalmanFilter:
         # Covariance for measurements
         # self.R_t = np.eye(3)*(10.0**(-3))
         self.R_t = np.eye(3)
-        self.R_t[0,0] = 0.20**(2)
-        self.R_t[1,1] = 0.20**(2)
-        self.R_t[2,2] = (20*np.pi/180.0)**(2)
+        self.R_t[0,0] = 1.0**(2)
+        self.R_t[1,1] = 1.0**(2)
+        self.R_t[2,2] = (2.0*np.pi/180.0)**(2)
 
         # The threshold of each covariance
-        self.cov_threshold = [0.10**2, 0.10**2, (5.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
+        self.cov_threshold = [0.30**2, 0.30**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
 
         # YOUR CODE HERE
         self.n = 3 # Number of states
@@ -220,8 +220,8 @@ class KalmanFilter:
             theta_meas = atan2(H_robot_2_world[1,0],H_robot_2_world[0,0])
             """
             x_y_1_meas = self.H_marker_2_world[id_marker].dot(H_robot_2_marker.dot(np.array([[0.],[0.],[1.]])))
-            x_meas = x_y_1_meas[0]
-            y_meas = x_y_1_meas[1]
+            x_meas = x_y_1_meas[0,0]
+            y_meas = x_y_1_meas[1,0]
             theta_meas = self.dict_markers[id_marker][2]-meas[2]
             # pi_2 = 2.0*np.pi
             if theta_meas > np.pi:
@@ -229,10 +229,12 @@ class KalmanFilter:
             elif theta_meas < -np.pi:
                 theta_meas += pi_2
 
-            print "x_meas =",x_meas, "y_meas =",y_meas, "theta_meas =",theta_meas
+            print "x_meas =",x_meas, "y_meas =",y_meas, "theta_meas =",(theta_meas*180.0/np.pi), "deg"
             x_meas_apriltag_list.append(np.array([[x_meas], [y_meas], [theta_meas]])) # 3 by 1
 
+        #
         # print (x_meas_apriltag_list[0]).shape
+        # print "x_meas_apriltag_list[0]", x_meas_apriltag_list[0]
 
         # Update the Kalman gain
         temp = self.dhx_dx.dot(self.Sigma_est).dot(self.dhx_dx.transpose()) + self.R_t
@@ -275,11 +277,11 @@ class KalmanFilter:
 
         # Update the covariance matrix
         is_converged = False
-        """
+
         for kk in range(self.n):
             if self.Sigma_est[kk,kk] <= self.cov_threshold[kk]:
                 is_converged = True
-        """
+
         #
         if is_converged:
             # No update for the covariance matrix
@@ -315,7 +317,7 @@ class KalmanFilter:
         # Calculate the time betweeen
         # time_now = imu_meas[4];
         if self.last_time is None:
-            self.dt = time_now
+            self.dt = 0.01
         else:
             self.dt = time_now - self.last_time
 
@@ -346,17 +348,22 @@ class KalmanFilter:
         # YOUR CODE HERE
         # Calculate the time betweeen
         if self.last_time is None:
-            self.dt = time_now
+            self.dt = 0.01
         else:
             self.dt = time_now - self.last_time
         #
         self.last_time = time_now
 
         # Prediction
-        amcl_pose = ros_interface.get_amcl_pose()
+        # amcl_pose = ros_interface.get_amcl_pose() # From /amcl_pose
+        amcl_pose = ros_interface.get_amcl_pose_tf() # From tf and /amcl_pose
+        #
         if not (amcl_pose is None):
             self.mu_est = amcl_pose[0]
             self.Sigma_est = amcl_pose[1]
+            print "Before--"
+            print "mu_est",self.mu_est
+            print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"
         else:
             # No prediction was done
             pass

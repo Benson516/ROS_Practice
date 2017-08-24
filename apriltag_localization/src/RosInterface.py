@@ -87,6 +87,9 @@ class ROSInterface(object):
         self._T_subState[1,1] = 1.0
         self._T_subState[2,5] = 1.0
 
+        # tf
+        self.tf_listener = tf.TransformListener()
+
 
     def _tag_pose_callback(self, posearray):
         """
@@ -177,6 +180,35 @@ class ROSInterface(object):
             #
             pose = self._amcl_pose
             quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+            euler = tf.transformations.euler_from_quaternion(quaternion)
+            # roll = euler[0]
+            # pitch = euler[1]
+            yaw = euler[2]
+            pose_2D[2,0] = yaw
+            # Reduced-order covariance matrix
+            cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
+            #
+            return (pose_2D, cov_2D)
+
+    def get_amcl_pose_tf(self):
+        # Get pose_2D from tf to reduce the effect of delay
+        try:
+            # From /map to /base_footprint
+            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
+        except:
+            return None
+        #
+        if self._amcl_poseStamp is None:
+            return None
+        else:
+            # [x, y, theta].'
+            pose_2D = np.zeros((3,1))
+            #
+            pose_2D[0,0] = trans[0] # self._amcl_pose.position.x
+            pose_2D[1,0] = trans[1] # self._amcl_pose.position.y
+            #
+            # pose = self._amcl_pose
+            # quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
             euler = tf.transformations.euler_from_quaternion(quaternion)
             # roll = euler[0]
             # pitch = euler[1]

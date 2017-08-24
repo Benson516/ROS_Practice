@@ -365,8 +365,8 @@ class KalmanFilter:
             print "mu_est",self.mu_est
             print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"
         else:
-            # No prediction was done
-            pass
+            # No prediction was done, return
+            return self.mu_est
 
         # Update, when measurements are available
         if not (z_t is None) and not (z_t == []):

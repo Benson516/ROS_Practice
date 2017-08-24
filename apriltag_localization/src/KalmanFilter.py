@@ -205,6 +205,9 @@ class KalmanFilter:
         print "num_markers =",num_markers
         # print type(z_t[0]) # list
 
+        # 2pi
+        pi_2 = 2.0*np.pi
+
         # Calculate the pose-measurement by each apriltag
         x_meas_apriltag_list = list()
         for meas in z_t:
@@ -220,7 +223,7 @@ class KalmanFilter:
             x_meas = x_y_1_meas[0]
             y_meas = x_y_1_meas[1]
             theta_meas = self.dict_markers[id_marker][2]-meas[2]
-            pi_2 = 2.0*np.pi
+            # pi_2 = 2.0*np.pi
             if theta_meas > np.pi:
                 theta_meas -= pi_2
             elif theta_meas < -np.pi:
@@ -237,6 +240,12 @@ class KalmanFilter:
         self.Kt = self.Kt*(1.0/num_markers)
 
         # Calculate the pose-error related to each measured-pose by apriltag
+        # pi_2 = 2.0*np.pi
+        if self.mu_est[2,0] > np.pi:
+            self.mu_est[2,0] -= pi_2
+        elif self.mu_est[2,0] < -np.pi:
+            self.mu_est[2,0] += pi_2
+        #
         temp_error = np.zeros((3,1))
         for i in range(num_markers):
             """
@@ -248,7 +257,7 @@ class KalmanFilter:
             print (temp_error).shape
             """
             delta_x = (x_meas_apriltag_list[i] - self.mu_est)
-            pi_2 = 2.0*np.pi
+            # pi_2 = 2.0*np.pi
             if delta_x[2,0] > np.pi:
                 delta_x[2,0] -= pi_2
             elif delta_x[2,0] < -np.pi:
@@ -256,14 +265,21 @@ class KalmanFilter:
             temp_error = temp_error + delta_x
         # Update mean
         self.mu_est = self.mu_est + self.Kt.dot(temp_error)
+        # pi_2 = 2.0*np.pi
+        if self.mu_est[2,0] > np.pi:
+            self.mu_est[2,0] -= pi_2
+        elif self.mu_est[2,0] < -np.pi:
+            self.mu_est[2,0] += pi_2
 
         # print "Sigma_est",self.Sigma_est
 
         # Update the covariance matrix
         is_converged = False
+        """
         for kk in range(self.n):
             if self.Sigma_est[kk,kk] <= self.cov_threshold[kk]:
                 is_converged = True
+        """
         #
         if is_converged:
             # No update for the covariance matrix

@@ -354,6 +354,7 @@ class KalmanFilter:
         #
         self.last_time = time_now
 
+        """
         # Prediction
         # amcl_pose = ros_interface.get_amcl_pose() # From /amcl_pose
         amcl_pose = ros_interface.get_amcl_pose_tf() # From tf and /amcl_pose
@@ -367,14 +368,35 @@ class KalmanFilter:
         else:
             # No prediction was done, return
             return self.mu_est
+        """
 
         # Update, when measurements are available
         if not (z_t is None) and not (z_t == []):
+            # Once we get the measurement, get the amcl_pose
+            #--------------------------------#
+            # Prediction
+            # amcl_pose = ros_interface.get_amcl_pose() # From /amcl_pose
+            amcl_pose = ros_interface.get_amcl_pose_tf() # From tf and /amcl_pose
+            if not (amcl_pose is None):
+                self.mu_est = amcl_pose[0]
+                self.Sigma_est = amcl_pose[1]
+                print "Before--"
+                print "mu_est",self.mu_est
+                print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"
+            else:
+                # No prediction was done, return
+                return self.mu_est
+            #--------------------------------#
+            # If we got the pose_2D, do update
+            # Update
             self.update(z_t)
             # Fix the prediction of the amcl_pose
             ros_interface.set_amcl_pose(self.mu_est,self.Sigma_est)
+            print "After--"
+            print "mu_est",self.mu_est
+            print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"
         else:
-            # No update was Done
+            # No update was Done, no pose_2D was gotten from amcl
             pass
 
         return self.mu_est

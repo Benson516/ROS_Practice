@@ -30,6 +30,6 @@
       {id: 15, size: 0.0641},
       ]
     </rosparam>
-    <remap from="image_rect" to="image_raw"/>
+    <!-- remap from="image_rect" to="image_raw"/ -->
   </node>
 </launch>

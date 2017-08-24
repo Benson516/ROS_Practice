@@ -62,9 +62,11 @@ class ApriltagLocalization(object):
         # Kalman filter
         # self.kalman_filter.step_filter(self.controlOut[0], (-1)*imu_meas, tag_measurement, rospy.get_time())
         self.kalman_filter.step_filter_by_amcl(self.ros_interface, tag_measurement, rospy.get_time())
+        """
         print "After--"
         print "mu_est",self.kalman_filter.mu_est
         print "angle_est =", (self.kalman_filter.mu_est[2,0]*180.0/np.pi), "deg"
+        """
         #
         return
 

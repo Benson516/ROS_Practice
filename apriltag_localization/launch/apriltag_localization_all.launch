@@ -1,11 +1,8 @@
 <?xml version="1.0"?>
 <launch>    
 
-    <!-- USB Camera -->
-    <include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" />
-    
-    <!-- Apriltag detection -->
-    <include file="$(find apriltags_ros)/launch/tag_detection.launch" />
+    <!-- USB camera, image processing, and apriltag detector -->
+    <include file="$(find apriltags_ros)/launch/camera_proc_tag.launch" />
 
     <!-- apriltag_localization -->
     <include file="$(find apriltag_localization)/launch/apriltag_localization.launch" />

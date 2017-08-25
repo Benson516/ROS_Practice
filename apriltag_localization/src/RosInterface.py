@@ -194,8 +194,12 @@ class ROSInterface(object):
         # Get pose_2D from tf to reduce the effect of delay
         try:
             # From /map to /base_footprint
-            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
-        except:
+            # (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
+            #
+            now = rospy.Time.now()
+            tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(0.5))
+            (trans, quaternion) = tf_listener.lookupTransform('/map','/base_footprint', now)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return None
         #
         if self._amcl_poseStamp is None:

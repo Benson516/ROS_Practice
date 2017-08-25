@@ -197,9 +197,9 @@ class ROSInterface(object):
             # (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
             #
             now = rospy.Time.now()
-            tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(0.5))
-            (trans, quaternion) = tf_listener.lookupTransform('/map','/base_footprint', now)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            self.tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(1.0))
+            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', now)
+        except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return None
         #
         if self._amcl_poseStamp is None:

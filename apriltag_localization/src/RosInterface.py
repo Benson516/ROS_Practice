@@ -180,7 +180,7 @@ class ROSInterface(object):
         tag_list = list()
         for kk in range(len(self._marker_num)): # range(self.num_detections):
             #
-            tagFramName = "/tag_%d" % self._marker_num
+            tagFramName = "/tag_%d" % self._marker_num[kk]
             try:
                 # From /usb_cam to a tag
                 (_t_cam_2_tag, quaternion) = self.tf_listener.lookupTransform( camera_frame, tagFramName, rospy.Time(0))

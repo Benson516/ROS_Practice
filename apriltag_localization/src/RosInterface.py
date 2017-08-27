@@ -33,7 +33,7 @@ import numpy as np
 import sys
 
 import tf
-
+from tf.transformations import *
 
 # Extra utility functions
 from utility import *
@@ -164,6 +164,36 @@ class ROSInterface(object):
             tag_list.append([dx,dy,self._angle[kk],self._marker_num[kk]])
         return tag_list
 
+    def get_measurements_tf(self):
+        """
+        Returns information about the last tag seen if any. Returns a list of Python list
+        in the format of (x,y,theta,id). Returns None if no new tag is seen.
+        """
+        if self._no_detection:
+            return None
+        self._no_detection = True
+
+        # Note all tags are represented in robot's coordinate
+        tag_list = list()
+        for kk in range(len(self._marker_num)): # range(self.num_detections):
+            #
+            framName = "/tag_%d" % self._marker_num
+            try:
+                # From a tag to /usb_cam
+                (_t_tag_2_cam, quaternion) = self.tf_listener.lookupTransform( framName, '/usb_cam', rospy.Time(0))
+            except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+            _R_tag_2_cam = quaternion_matrix(quaternion)
+            _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
+            if _angle_tag_2_bot is None:
+                continue
+            _t_tag_2_bot = np.dot(self._R_cam2bot, _t_tag_2_cam) + self._t_cam2bot
+            dx = _t_tag_2_bot[0,0]
+            dy = _t_tag_2_bot[1,0]
+            tag_list.append([dx,dy,_angle_tag_2_bot,self._marker_num[kk]])
+        return tag_list
+
+
     def amcl_pose_CB(self, PoseWithCovarianceStamped):
         self._amcl_poseStamp = PoseWithCovarianceStamped.header
         self._amcl_pose = PoseWithCovarianceStamped.pose.pose
@@ -194,11 +224,13 @@ class ROSInterface(object):
         # Get pose_2D from tf to reduce the effect of delay
         try:
             # From /map to /base_footprint
-            # (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
+            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
             #
+            """
             now = rospy.Time.now()
             self.tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(1.0))
             (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', now)
+            """
         except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return None
         #

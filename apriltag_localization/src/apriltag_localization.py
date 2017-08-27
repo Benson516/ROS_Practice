@@ -48,7 +48,8 @@ class ApriltagLocalization(object):
         YOUR CODE HERE
         This function is called at 10Hz
         """
-        tag_measurement = self.ros_interface.get_measurements()
+        # tag_measurement = self.ros_interface.get_measurements()
+        tag_measurement = self.ros_interface.get_measurements_tf()
         # amcl_pose = self.ros_interface.get_amcl_pose()
 
         print '-----------------'

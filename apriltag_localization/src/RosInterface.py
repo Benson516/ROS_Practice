@@ -71,6 +71,8 @@ class ROSInterface(object):
         self._t_cam2bot = np.concatenate((t_cam_to_body,np.array([[1]])), axis=0)
         # self._R_tag2bot = np.array([[0,-1,0,0],[0,0,1,0],[-1,0,0,0],[0,0,0,1]])
 
+        #
+        self.camera_frame_id = camera_frame_id
         # camera_frame_id = "usb_cam"
         # ROS publishers and subscribers
         rospy.Subscriber("/%s/tag_detections" % camera_frame_id, AprilTagDetectionArray,self._tag_pose_callback)
@@ -174,20 +176,21 @@ class ROSInterface(object):
         # self._no_detection = True
 
         # Note all tags are represented in robot's coordinate
+        camera_frame = "/%s" % self.camera_frame_id
         tag_list = list()
         for kk in range(len(self._marker_num)): # range(self.num_detections):
             #
-            framName = "/tag_%d" % self._marker_num
+            tagFramName = "/tag_%d" % self._marker_num
             try:
-                # From a tag to /usb_cam
-                (_t_tag_2_cam, quaternion) = self.tf_listener.lookupTransform( framName, '/usb_cam', rospy.Time(0))
+                # From /usb_cam to a tag
+                (_t_cam_2_tag, quaternion) = self.tf_listener.lookupTransform( camera_frame, tagFramName, rospy.Time(0))
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
             _R_tag_2_cam = quaternion_matrix(quaternion)
             _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
             if _angle_tag_2_bot is None:
                 continue
-            _t_tag_2_bot = np.dot(self._R_cam2bot, _t_tag_2_cam) + self._t_cam2bot
+            _t_tag_2_bot = np.dot(self._R_cam2bot, _t_cam_2_tag) + self._t_cam2bot
             dx = _t_tag_2_bot[0,0]
             dy = _t_tag_2_bot[1,0]
             tag_list.append([dx,dy,_angle_tag_2_bot,self._marker_num[kk]])

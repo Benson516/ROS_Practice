@@ -184,13 +184,17 @@ class ROSInterface(object):
             try:
                 # From /usb_cam to a tag
                 (_t_cam_2_tag, quaternion) = self.tf_listener.lookupTransform( camera_frame, tagFramName, rospy.Time(0))
+                _R_tag_2_cam = quaternion_matrix(quaternion)
+                _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
+                if _angle_tag_2_bot is None:
+                    continue
+                _t_tag_2_bot = np.dot(self._R_cam2bot, _t_cam_2_tag) + self._t_cam2bot
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                continue
-            _R_tag_2_cam = quaternion_matrix(quaternion)
-            _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
-            if _angle_tag_2_bot is None:
-                continue
-            _t_tag_2_bot = np.dot(self._R_cam2bot, _t_cam_2_tag) + self._t_cam2bot
+                # continue
+                # Use the old data which is parsed at callback
+                _t_tag_2_bot = self._t[kk]
+                _angle_tag_2_bot = self._angle[kk]
+            #
             dx = _t_tag_2_bot[0,0]
             dy = _t_tag_2_bot[1,0]
             tag_list.append([dx,dy,_angle_tag_2_bot,self._marker_num[kk]])

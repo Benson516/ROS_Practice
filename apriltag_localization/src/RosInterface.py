@@ -171,7 +171,7 @@ class ROSInterface(object):
         """
         if self._no_detection:
             return None
-        self._no_detection = True
+        # self._no_detection = True
 
         # Note all tags are represented in robot's coordinate
         tag_list = list()
@@ -191,6 +191,8 @@ class ROSInterface(object):
             dx = _t_tag_2_bot[0,0]
             dy = _t_tag_2_bot[1,0]
             tag_list.append([dx,dy,_angle_tag_2_bot,self._marker_num[kk]])
+        #
+        self._no_detection = True
         return tag_list
 
 

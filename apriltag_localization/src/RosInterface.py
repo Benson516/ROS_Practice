@@ -184,6 +184,11 @@ class ROSInterface(object):
             try:
                 # From /usb_cam to a tag
                 (_t_cam_2_tag, quaternion) = self.tf_listener.lookupTransform( camera_frame, tagFramName, rospy.Time(0))
+                """
+                now = rospy.Time.now()
+                self.tf_listener.waitForTransform(camera_frame,tagFramName, now, rospy.Duration(0.5))
+                (trans, quaternion) = self.tf_listener.lookupTransform(camera_frame,tagFramName, now)
+                """
                 _R_tag_2_cam = quaternion_matrix(quaternion)
                 _angle_tag_2_bot = self.get_angle_tag_2_cam_from_R(_R_tag_2_cam)
                 if _angle_tag_2_bot is None:
@@ -191,6 +196,7 @@ class ROSInterface(object):
                 _t_tag_2_bot = np.dot(self._R_cam2bot, _t_cam_2_tag) + self._t_cam2bot
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 # continue
+                print "Use topic at measurement"
                 # Use the old data which is parsed at callback
                 _t_tag_2_bot = self._t[kk]
                 _angle_tag_2_bot = self._angle[kk]
@@ -231,30 +237,36 @@ class ROSInterface(object):
 
     def get_amcl_pose_tf(self):
         # Get pose_2D from tf to reduce the effect of delay
-        try:
-            # From /map to /base_footprint
-            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
-            #
-            """
-            now = rospy.Time.now()
-            self.tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(1.0))
-            (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', now)
-            """
-        except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return None
-        #
         if self._amcl_poseStamp is None:
             return None
         else:
             # [x, y, theta].'
             pose_2D = np.zeros((3,1))
             #
-            pose_2D[0,0] = trans[0] # self._amcl_pose.position.x
-            pose_2D[1,0] = trans[1] # self._amcl_pose.position.y
+            # Try tf
+            try:
+                # From /map to /base_footprint
+                (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', rospy.Time(0))
+                #
+                """
+                now = rospy.Time.now()
+                self.tf_listener.waitForTransform('/map','/base_footprint', now, rospy.Duration(1.0))
+                (trans, quaternion) = self.tf_listener.lookupTransform('/map','/base_footprint', now)
+                """
+                pose_2D[0,0] = trans[0] # self._amcl_pose.position.x
+                pose_2D[1,0] = trans[1] # self._amcl_pose.position.y
+                # pose = self._amcl_pose
+                # quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+                euler = tf.transformations.euler_from_quaternion(quaternion)
+            except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                # Use the topic /amcl_pose instead
+                pose_2D[0,0] = self._amcl_pose.position.x
+                pose_2D[1,0] = self._amcl_pose.position.y
+                #
+                pose = self._amcl_pose
+                quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+                euler = tf.transformations.euler_from_quaternion(quaternion)
             #
-            # pose = self._amcl_pose
-            # quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
-            euler = tf.transformations.euler_from_quaternion(quaternion)
             # roll = euler[0]
             # pitch = euler[1]
             yaw = euler[2]
@@ -262,7 +274,7 @@ class ROSInterface(object):
             # Reduced-order covariance matrix
             cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
             #
-            return (pose_2D, cov_2D)
+        return (pose_2D, cov_2D)
 
     def set_amcl_pose(self, pose_2D, cov_2D):
         #

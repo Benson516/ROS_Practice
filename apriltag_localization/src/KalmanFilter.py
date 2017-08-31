@@ -236,10 +236,6 @@ class KalmanFilter:
         # print (x_meas_apriltag_list[0]).shape
         # print "x_meas_apriltag_list[0]", x_meas_apriltag_list[0]
 
-        # Update the Kalman gain
-        temp = self.dhx_dx.dot(self.Sigma_est).dot(self.dhx_dx.transpose()) + self.R_t
-        self.Kt = self.Sigma_est.dot(self.dhx_dx.transpose()).dot(np.linalg.inv(temp))
-        self.Kt = self.Kt*(1.0/num_markers)
 
         # Calculate the pose-error related to each measured-pose by apriltag
         # pi_2 = 2.0*np.pi
@@ -248,15 +244,15 @@ class KalmanFilter:
         elif self.mu_est[2,0] < -np.pi:
             self.mu_est[2,0] += pi_2
         #
-        temp_error = np.zeros((3,1))
+        error_sum = np.zeros((3,1))
         for i in range(num_markers):
             """
             print type(x_meas_apriltag_list[i])
             print (x_meas_apriltag_list[i]).shape
             print type(self.mu_est)
             print (self.mu_est).shape
-            print type(temp_error)
-            print (temp_error).shape
+            print type(error_sum)
+            print (error_sum).shape
             """
             delta_x = (x_meas_apriltag_list[i] - self.mu_est)
             # pi_2 = 2.0*np.pi
@@ -264,9 +260,27 @@ class KalmanFilter:
                 delta_x[2,0] -= pi_2
             elif delta_x[2,0] < -np.pi:
                 delta_x[2,0] += pi_2
-            temp_error = temp_error + delta_x
+            #
+            error_sum += delta_x
+
+        #
+        while error_sum[2,0] > np.pi:
+            error_sum[2,0] -= pi_2
+        while error_sum[2,0] < -np.pi:
+            error_sum[2,0] += pi_2
+        #
+
+        # Averaging all the estimated pose
+        pose_error = error_sum*(1.0/num_markers) # The averaged pose-error
+        var_sensors = self.R_t*(1.0/num_markers) # The variance of the averaged pose that is suggested by sensors
+
+        # Update the Kalman gain
+        temp = self.dhx_dx.dot(self.Sigma_est).dot(self.dhx_dx.transpose()) + var_sensors
+        self.Kt = self.Sigma_est.dot(self.dhx_dx.transpose()).dot(np.linalg.inv(temp))
+        # self.Kt = self.Kt*(1.0/num_markers)
+
         # Update mean
-        self.mu_est = self.mu_est + self.Kt.dot(temp_error)
+        self.mu_est = self.mu_est + self.Kt.dot( pose_error )
         # pi_2 = 2.0*np.pi
         if self.mu_est[2,0] > np.pi:
             self.mu_est[2,0] -= pi_2
@@ -290,7 +304,8 @@ class KalmanFilter:
             # Update the covariance matrix
             # temp_matrix = num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
             # print "temp_matrix",temp_matrix
-            self.Sigma_est -= num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
+            # self.Sigma_est -= num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))
+            self.Sigma_est -= self.Kt.dot(self.dhx_dx.dot(self.Sigma_est))
         #
         # print "Kt",self.Kt
         # print "mu_est",self.mu_est

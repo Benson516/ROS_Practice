@@ -195,11 +195,14 @@ class ROSInterface(object):
                     continue
                 _t_tag_2_bot = np.dot(self._R_cam2bot, _t_cam_2_tag) + self._t_cam2bot
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                # continue
+                print "tf exception while getting measurements"
+                continue
+                """
                 print "Use topic at measurement"
                 # Use the old data which is parsed at callback
                 _t_tag_2_bot = self._t[kk]
                 _angle_tag_2_bot = self._angle[kk]
+                """
             #
             dx = _t_tag_2_bot[0,0]
             dy = _t_tag_2_bot[1,0]

@@ -33,8 +33,6 @@ class KalmanFilter:
 
         # Covariance for motion
         self.Q_t = np.eye(2)
-        self.Q_t[0,0] = 100.0
-        # self.Q_t[1,1] = 1.0
 
         # Covariance for measurements
         # self.R_t = np.eye(3)*(10.0**(-3))
@@ -45,6 +43,14 @@ class KalmanFilter:
 
         # The threshold of each covariance
         self.cov_threshold = [0.5**2, 0.5**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
+
+        # Extra variance for preventing over convergence
+        self.R_extra = np.eye(3)
+        self.R_extra[0,0] = 0.001**2
+        self.R_extra[1,1] = 0.001**2
+        self.R_extra[2,2] = (0.05*np.pi/180.0)**(2)
+        #
+        self.cov_increse_ratio = 1.01
 
         # YOUR CODE HERE
         self.n = 3 # Number of states
@@ -203,6 +209,9 @@ class KalmanFilter:
         # for every features, do the update
         num_markers = len(z_t)
         print "num_markers =",num_markers
+        if num_markers == 0:
+            return (self.mu_est, self.Sigma_est)
+
         # print type(z_t[0]) # list
 
         # 2pi
@@ -299,7 +308,10 @@ class KalmanFilter:
         #
         if is_converged:
             # No update for the covariance matrix
-            pass
+            # pass
+            # Add additional variance
+            # self.Sigma_est += self.R_extra
+            self.Sigma_est = self.Sigma_est*self.cov_increse_ratio
         else:
             # Update the covariance matrix
             # temp_matrix = num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))

@@ -45,7 +45,7 @@ class ROSInterface(object):
     Class used to interface with the rover. Gets sensor measurements through ROS subscribers,
     and transforms them into the 2D plane, and publishes velocity commands.
     """
-    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, _t_cam_at_bot):
+    def __init__(self, camera_frame_id, base_frame_id, map_frame_id):
         """
         Initialize the class
         """
@@ -63,8 +63,9 @@ class ROSInterface(object):
         self.map_frame = "/%s" % map_frame_id # "/map"
 
         # Get the camera's pose relative to base_frame
+        trans_cam_at_bot = (0.0, 0.0, 0.0)
         is_tf_bot_2_cam_available = False
-        while not is_tf_bot_2_cam_available:
+        while (not is_tf_bot_2_cam_available) and (not rospy.is_shutdown() ):
             # Try tf
             try:
                 # Transform from /base_footprint to /usb_cam
@@ -75,18 +76,20 @@ class ROSInterface(object):
 
                 R_full_cam_2_bot = quaternion_matrix(quaternion)
                 # Leave the loop
-                print ("tf from %s to %s got" % self.base_frame, self.camera_frame)
+                # print ("tf from %s to %s got" % self.base_frame, self.camera_frame)
+                print "Got the tf"
                 is_tf_bot_2_cam_available = True
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 # Sleep, then keep on trying
+                print "tf exception..."
                 rospy.sleep(0.5)
 
         #
-        _t_cam_at_bot = trans_cam_at_bot
+        _t_cam_at_bot = np.transpose( np.array([trans_cam_at_bot]) )
         self._t_cam_at_bot = np.concatenate((_t_cam_at_bot,np.array([[1]])), axis=0)
         self._R_cam_2_bot = R_full_cam_2_bot
         #
-        print "_t_cam_at_bot =", _t_cam_at_bot
+        print "_t_cam_at_bot =", self._t_cam_at_bot
         print "_R_cam_2_bot =", self._R_cam_2_bot
 
         """
@@ -137,7 +140,7 @@ class ROSInterface(object):
         """
         if self.tag_Queue.empty():
             return None
-        print "The size of tag_Queue:", self.tag_Queue
+        print "The size of tag_Queue:", self.tag_Queue.qsize()
         # Else, get one element from queue
         posearray = self.tag_Queue.get()
         num_detections = len(posearray.detections)
@@ -150,12 +153,15 @@ class ROSInterface(object):
             tagFramName = "/tag_%d" % _marker_num
             try:
                 # From /usb_cam to a tag
-                (_t_tag_at_cam, quaternion) = self.tf_listener.lookupTransform( self.camera_frame, tagFramName, rospy.Time(0))
+                (trans, quaternion) = self.tf_listener.lookupTransform( self.camera_frame, tagFramName, rospy.Time(0))
                 """
                 now = rospy.Time.now()
                 self.tf_listener.waitForTransform(self.camera_frame,tagFramName, now, rospy.Duration(0.5))
                 (trans, quaternion) = self.tf_listener.lookupTransform(self.camera_frame,tagFramName, now)
                 """
+                # print "trans =", trans
+                _t_tag_at_cam = np.transpose(np.matrix([trans[0], trans[1], trans[2],1.0]))
+                # print "_t_tag_at_cam =", _t_tag_at_cam
                 _R_tag_2_cam = quaternion_matrix(quaternion)
                 #
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
@@ -170,6 +176,7 @@ class ROSInterface(object):
             _angle_tag_at_bot = get_angle_tag_2_cam_from_R(_R_tag_2_cam, self.camera_top_and_tag_top)
             if _angle_tag_at_bot is None:
                 continue
+
             _t_tag_at_bot = np.dot(self._R_cam_2_bot, _t_tag_at_cam) + self._t_cam_at_bot
             #-----------------------------#
             # A list of tag information

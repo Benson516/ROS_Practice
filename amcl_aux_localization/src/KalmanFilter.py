@@ -37,12 +37,12 @@ class KalmanFilter:
         # Covariance for measurements
         # self.R_t = np.eye(3)*(10.0**(-3))
         self.R_t = np.eye(3)
-        self.R_t[0,0] = 0.3**(2)
-        self.R_t[1,1] = 0.3**(2)
-        self.R_t[2,2] = (1.0*np.pi/180.0)**(2)
+        self.R_t[0,0] = 0.02**(2)
+        self.R_t[1,1] = 0.02**(2)
+        self.R_t[2,2] = (0.8*np.pi/180.0)**(2)
 
         # The threshold of each covariance
-        self.cov_threshold = [0.5**2, 0.5**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
+        self.cov_threshold = [1.2**2, 1.2**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
 
         # Extra variance for preventing over convergence
         self.R_extra = np.eye(3)
@@ -50,7 +50,7 @@ class KalmanFilter:
         self.R_extra[1,1] = 0.001**2
         self.R_extra[2,2] = (0.05*np.pi/180.0)**(2)
         #
-        self.cov_increse_ratio = 1.01
+        self.cov_increse_ratio = 1.005
 
         # YOUR CODE HERE
         self.n = 3 # Number of states

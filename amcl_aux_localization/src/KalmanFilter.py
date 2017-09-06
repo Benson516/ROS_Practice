@@ -31,27 +31,6 @@ class KalmanFilter:
         self.markers = markers
         self.last_time = None # Used to keep track of time between measurements
 
-        # Covariance for motion
-        self.Q_t = np.eye(2)
-
-        # Covariance for measurements
-        # self.R_t = np.eye(3)*(10.0**(-3))
-        self.R_t = np.eye(3)
-        self.R_t[0,0] = 0.02**(2)
-        self.R_t[1,1] = 0.02**(2)
-        self.R_t[2,2] = (0.8*np.pi/180.0)**(2)
-
-        # The threshold of each covariance
-        self.cov_threshold = [1.2**2, 1.2**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
-
-        # Extra variance for preventing over convergence
-        self.R_extra = np.eye(3)
-        self.R_extra[0,0] = 0.001**2
-        self.R_extra[1,1] = 0.001**2
-        self.R_extra[2,2] = (0.05*np.pi/180.0)**(2)
-        #
-        self.cov_increse_ratio = 1.005
-
         # YOUR CODE HERE
         self.n = 3 # Number of states
         self.p = 2 # Number of inputs
@@ -59,6 +38,35 @@ class KalmanFilter:
         n = self.n
         p = self.p
         q = self.q
+
+        # Covariance for motion
+        self.Q_t = np.eye(p)
+
+        # Covariance for measurements
+        # self.R_t = np.eye(3)*(10.0**(-3))
+        self.R_t = np.eye(q)
+        self.R_t[0,0] = 0.02**(2)
+        self.R_t[1,1] = 0.02**(2)
+        self.R_t[2,2] = (0.8*np.pi/180.0)**(2)
+        # The ratio for the additional covariance increased with the square of distance
+        self.distortionRate = 1.0
+
+        # The threshold of each covariance
+        self.cov_threshold = [0.5**2, 0.5**2, (10.0*np.pi/180.0)**2] # 2.5 cm, 2.5 cm, 0.5 deg
+
+        # Creat a diagonal matrix with diagonal elements self.cov_threshold
+        self.cov_th = np.diag( np.array(self.cov_threshold) )
+
+        """
+        # Extra variance for preventing over convergence
+        self.R_extra = np.eye(q)
+        self.R_extra[0,0] = 0.005**2
+        self.R_extra[1,1] = 0.005**2
+        self.R_extra[2,2] = (0.1*np.pi/180.0)**(2)
+        #
+        self.cov_increse_ratio = 1.005
+        """
+
         #
         self.dt = 0; # second
         self.mu_est = np.zeros((n,1)) # Estimation of the mean of the states, x = [x,y,theta].'
@@ -78,6 +86,8 @@ class KalmanFilter:
         # dh(x)/dx
         self.dhx_dx = np.eye(n)
 
+        # The zero vector in homography
+        self.homography_zeroVec = np.array([[0.],[0.],[1.]])
         # Pre-calculate the information from known map-features
         # print type(self.markers)
         # print self.markers.shape
@@ -219,28 +229,44 @@ class KalmanFilter:
 
         # Calculate the pose-measurement by each apriltag
         x_meas_apriltag_list = list()
-        for meas in z_t:
-            id_marker = int(meas[3])
-            H_robot_2_marker = np.linalg.inv(self.Homography((meas[0],meas[1],meas[2])))
+        cov_sum = np.zeros((self.q, self.q)) # For calculating the covariance of the averaged distribution
+        for tag_pose in z_t:
+            id_marker = int(tag_pose[3])
+            H_robot_2_marker = np.linalg.inv(self.Homography((tag_pose[0],tag_pose[1],tag_pose[2])))
             """
             H_robot_2_world = self.H_marker_2_world[id_marker].dot(H_robot_2_marker)
             x_meas = H_robot_2_world[0,2]
             y_meas = H_robot_2_world[1,2]
             theta_meas = atan2(H_robot_2_world[1,0],H_robot_2_world[0,0])
             """
-            x_y_1_meas = self.H_marker_2_world[id_marker].dot(H_robot_2_marker.dot(np.array([[0.],[0.],[1.]])))
-            x_meas = x_y_1_meas[0,0]
-            y_meas = x_y_1_meas[1,0]
-            theta_meas = self.dict_markers[id_marker][2]-meas[2]
+            x_y_1_meas = self.H_marker_2_world[id_marker].dot( H_robot_2_marker.dot(self.homography_zeroVec) )
+            # x_meas = x_y_1_meas[0,0]
+            # y_meas = x_y_1_meas[1,0]
+            theta_meas = self.dict_markers[id_marker][2] - tag_pose[2]
             # pi_2 = 2.0*np.pi
             if theta_meas > np.pi:
                 theta_meas -= pi_2
-            elif theta_meas < -np.pi:
+            elif theta_meas <= -np.pi:
                 theta_meas += pi_2
-
-            print "x_meas =",x_meas, "y_meas =",y_meas, "theta_meas =",(theta_meas*180.0/np.pi), "deg"
-            x_meas_apriltag_list.append(np.array([[x_meas], [y_meas], [theta_meas]])) # 3 by 1
-
+            #
+            # print "x_meas =",x_meas, "y_meas =",y_meas, "theta_meas =",(theta_meas*180.0/np.pi), "deg"
+            # x_meas_apriltag_list.append(np.array([[x_meas], [y_meas], [theta_meas]])) # 3 by 1
+            x_y_1_meas[2,0] = theta_meas
+            print "Tag suggested robot-pose: ", x_y_1_meas
+            print "theta_measured =", (theta_meas*180.0/np.pi), "deg"
+            x_meas_apriltag_list.append(x_y_1_meas) # 3 by 1
+            # Calculating the (estimated) covariance of the tag
+            #---------------------#
+            # The square of the tag-distance
+            taf_dist_2 = (tag_pose[0]**2 + tag_pose[1]**2)
+            # The estimated covariance of this tag,
+            # which is the function of square distance between tag and robot
+            # cov_tag = self.R_t*(1.0 + taf_dist_2)
+            #
+            # Accumulating the covariance of each tag
+            # cov_sum += cov_tag
+            cov_sum += self.R_t*(1.0 + self.distortionRate*taf_dist_2)
+            #---------------------#
         #
         # print (x_meas_apriltag_list[0]).shape
         # print "x_meas_apriltag_list[0]", x_meas_apriltag_list[0]
@@ -250,7 +276,7 @@ class KalmanFilter:
         # pi_2 = 2.0*np.pi
         if self.mu_est[2,0] > np.pi:
             self.mu_est[2,0] -= pi_2
-        elif self.mu_est[2,0] < -np.pi:
+        elif self.mu_est[2,0] <= -np.pi:
             self.mu_est[2,0] += pi_2
         #
         error_sum = np.zeros((3,1))
@@ -267,25 +293,47 @@ class KalmanFilter:
             # pi_2 = 2.0*np.pi
             if delta_x[2,0] > np.pi:
                 delta_x[2,0] -= pi_2
-            elif delta_x[2,0] < -np.pi:
+            elif delta_x[2,0] <= -np.pi:
                 delta_x[2,0] += pi_2
             #
             error_sum += delta_x
+        #
 
-        #
-        while error_sum[2,0] > np.pi:
-            error_sum[2,0] -= pi_2
-        while error_sum[2,0] < -np.pi:
-            error_sum[2,0] += pi_2
-        #
 
         # Averaging all the estimated pose
         pose_error = error_sum*(1.0/num_markers) # The averaged pose-error
-        var_sensors = self.R_t*(1.0/num_markers) # The variance of the averaged pose that is suggested by sensors
+        # var_sensors = self.R_t*(1.0/num_markers) # The variance of the averaged pose that is suggested by sensors
+        var_sensors = cov_sum*((1.0/num_markers)**2) # The variance of the averaged pose that is suggested by sensors
+        # Correction of the angle
+        while pose_error[2,0] > np.pi:
+            pose_error[2,0] -= pi_2
+        while pose_error[2,0] <= -np.pi:
+            pose_error[2,0] += pi_2
 
+        ##--------------------------------------##
+        # Check if the covariance is too small
+        is_converged = False
+        for kk in range(self.n):
+            if self.Sigma_est[kk,kk] <= self.cov_threshold[kk]:
+                is_converged = True
+        ##--------------------------------------##
+        if is_converged:
+            # Boost up the covariance
+            # self.Sigma_est += self.R_extra
+            #
+            # A filter that pull the covariance toward the threshold
+            self.Sigma_est += 0.2*(self.cov_th - self.Sigma_est)
+            # Still update the covariance
+            is_converged = False
+        else:
+            pass
+        ##--------------------------------------##
+
+        #-------------------------#
         # Update the Kalman gain
         temp = self.dhx_dx.dot(self.Sigma_est).dot(self.dhx_dx.transpose()) + var_sensors
         self.Kt = self.Sigma_est.dot(self.dhx_dx.transpose()).dot(np.linalg.inv(temp))
+        # self.Kt = self.Sigma_est.dot(self.dhx_dx.transpose()).dot(np.linalg.pinv(temp)) # Use pseudo-inverse
         # self.Kt = self.Kt*(1.0/num_markers)
 
         # Update mean
@@ -293,25 +341,18 @@ class KalmanFilter:
         # pi_2 = 2.0*np.pi
         if self.mu_est[2,0] > np.pi:
             self.mu_est[2,0] -= pi_2
-        elif self.mu_est[2,0] < -np.pi:
+        elif self.mu_est[2,0] <= -np.pi:
             self.mu_est[2,0] += pi_2
 
         # print "Sigma_est",self.Sigma_est
 
         # Update the covariance matrix
-        is_converged = False
-
-        for kk in range(self.n):
-            if self.Sigma_est[kk,kk] <= self.cov_threshold[kk]:
-                is_converged = True
-
-        #
         if is_converged:
             # No update for the covariance matrix
-            # pass
+            pass
             # Add additional variance
             # self.Sigma_est += self.R_extra
-            self.Sigma_est = self.Sigma_est*self.cov_increse_ratio
+            # self.Sigma_est = self.Sigma_est*self.cov_increse_ratio
         else:
             # Update the covariance matrix
             # temp_matrix = num_markers*(self.Kt.dot(self.dhx_dx.dot(self.Sigma_est)))

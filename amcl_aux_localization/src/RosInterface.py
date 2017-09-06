@@ -236,6 +236,7 @@ class ROSInterface(object):
                 # quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
                 euler = tf.transformations.euler_from_quaternion(quaternion)
             except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                print "tf exception while getting robot pose"
                 # Use the topic /amcl_pose instead
                 pose_2D[0,0] = self._amcl_pose.position.x
                 pose_2D[1,0] = self._amcl_pose.position.y

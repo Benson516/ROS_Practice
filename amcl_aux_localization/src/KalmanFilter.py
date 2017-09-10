@@ -57,7 +57,7 @@ class KalmanFilter:
 
         # Creat a diagonal matrix with diagonal elements self.cov_threshold
         self.cov_th = np.diag( np.array(self.cov_threshold) )
-        self.cov_corectionRate = 0.2
+        self.cov_correctionRate = 0.2
 
         """
         # Extra variance for preventing over convergence
@@ -324,7 +324,7 @@ class KalmanFilter:
             # self.Sigma_est += self.R_extra
             #
             # A filter that pull the covariance toward the threshold
-            self.Sigma_est += self.cov_corectionRate*(self.cov_th - self.Sigma_est)
+            self.Sigma_est += self.cov_correctionRate*(self.cov_th - self.Sigma_est)
             # Still update the covariance
             is_converged = False
         else:

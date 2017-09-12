@@ -14,13 +14,13 @@ class Edge_Detector
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
-  
+
 public:
   Edge_Detector()
     : it_(nh_)
   {
     // Subscribe to input video feed and publish output video feed
-    image_sub_ = it_.subscribe("/usb_cam/image_raw", 1, 
+    image_sub_ = it_.subscribe("/usb_cam/image_raw", 1,
       &Edge_Detector::imageCb, this);
     image_pub_ = it_.advertise("/edge_detector/raw_image", 1);
     cv::namedWindow(OPENCV_WINDOW);
@@ -52,11 +52,13 @@ public:
     // Draw an example circle on the video stream
     if (cv_ptr->image.rows > 400 && cv_ptr->image.cols > 600){
 
-	detect_edges(cv_ptr->image);
-    	image_pub_.publish(cv_ptr->toImageMsg());
+     detect_edges(cv_ptr->image);
+    image_pub_.publish(cv_ptr->toImageMsg());
 
-	}
+   }
+
   }
+
   void detect_edges(cv::Mat img)
   {
 
@@ -84,8 +86,8 @@ public:
 	// dst.copyTo(img);
 	img = dst;
 	//
-  }	
- 
+  }
+
 };
 
 int main(int argc, char** argv)

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="ISO-8859-15"?>
-
-<launch>
-  <node pkg="apriltag_localization" type="apriltag_localization.py" name="apriltag_localization" output="screen">
-    <param name="param_path" value="$(find apriltag_localization)/params/params.yaml"/>
-  </node>
-</launch>

@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
-<launch>    
+<launch>
 
     <!-- USB Camera -->
     <include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" />
-    
+
     <!-- Image processing -->
     <node pkg="image_proc" type="image_proc" name="image_proc" output="screen" ns="usb_cam">
         <!-- remap from="image_raw" to="image_crop"/ -->
     </node>
-    
+
     <!-- Apriltag detection -->
     <include file="$(find apriltags_ros)/launch/tag_detection.launch" />
-    
+
 
 </launch>

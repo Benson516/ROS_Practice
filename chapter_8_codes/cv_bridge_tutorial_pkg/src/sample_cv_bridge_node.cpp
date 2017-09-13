@@ -51,11 +51,9 @@ public:
 
     // Draw an example circle on the video stream
     if (cv_ptr->image.rows > 400 && cv_ptr->image.cols > 600){
-
-     detect_edges(cv_ptr->image);
-    image_pub_.publish(cv_ptr->toImageMsg());
-
-   }
+        detect_edges(cv_ptr->image);
+        image_pub_.publish(cv_ptr->toImageMsg());
+    }
 
   }
 
@@ -73,15 +71,15 @@ public:
 	// img.copyTo(src);
 
 	cv::cvtColor( img, src_gray, CV_BGR2GRAY );
-        cv::blur( src_gray, detected_edges, cv::Size(5,5) );
+    cv::blur( src_gray, detected_edges, cv::Size(5,5) );
 	cv::Canny( detected_edges, detected_edges, lowThreshold, highThreshold, kernel_size );
 
   	// dst = cv::Scalar::all(0);
   	img.copyTo( dst, detected_edges);
 
-    	cv::imshow(OPENCV_WINDOW, img);
-    	cv::imshow(OPENCV_WINDOW_1, dst);
-    	cv::waitKey(3);
+    cv::imshow(OPENCV_WINDOW, img);
+    cv::imshow(OPENCV_WINDOW_1, dst);
+    cv::waitKey(3);
 	//
 	// dst.copyTo(img);
 	img = dst;

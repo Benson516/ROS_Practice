@@ -6,6 +6,7 @@
     
     <!-- Image processing -->
     <node pkg="image_proc" type="image_proc" name="image_proc" output="screen" ns="usb_cam">
+        <!-- remap from="image_raw" to="image_crop"/ -->
     </node>
     
     <!-- Apriltag detection -->

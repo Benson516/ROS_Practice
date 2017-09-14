@@ -88,10 +88,18 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
 
   // use projected focal length and principal point
   // these are the correct values
+
+  // Bounderies of ROI
+  double roi_offset_x = cam_info->roi.x_offset;
+  double roi_offset_y = cam_info->roi.y_offset;
+  // Focal length in pixel-coordinate
   double fx = cam_info->P[0];
   double fy = cam_info->P[5];
-  double px = cam_info->P[2];
-  double py = cam_info->P[6];
+  // Principle points in pixel-coordinate
+  double px = (cam_info->P[2] - roi_offset_x);
+  double py = (cam_info->P[6] - roi_offset_y);
+  //
+
 
   if(!sensor_frame_id_.empty())
     cv_ptr->header.frame_id = sensor_frame_id_;

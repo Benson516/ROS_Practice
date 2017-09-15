@@ -45,7 +45,7 @@ class ROSInterface(object):
     Class used to interface with the rover. Gets sensor measurements through ROS subscribers,
     and transforms them into the 2D plane, and publishes velocity commands.
     """
-    def __init__(self, camera_frame_id, base_frame_id, map_frame_id):
+    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector):
         """
         Initialize the class
         """
@@ -61,6 +61,8 @@ class ROSInterface(object):
         self.camera_frame = "/%s" % camera_frame_id # /usb_cam
         self.base_frame = "/%s" % base_frame_id # "/base_footprint"
         self.map_frame = "/%s" % map_frame_id # "/map"
+        # Name space
+        self.ns_tag_detector = "/%s" % ns_tag_detector #"/proc_image"
 
         # Get the camera's pose relative to base_frame
         trans_cam_at_bot = (0.0, 0.0, 0.0)
@@ -102,7 +104,7 @@ class ROSInterface(object):
         """
 
         # ROS publishers and subscribers
-        rospy.Subscriber("%s/tag_detections" % self.camera_frame, AprilTagDetectionArray,self._tag_pose_callback)
+        rospy.Subscriber("%s/tag_detections" % self.ns_tag_detector, AprilTagDetectionArray,self._tag_pose_callback)
         # amcl
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.amcl_pose_CB)
         self._pub_init_amcl = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=10)

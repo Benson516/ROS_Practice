@@ -26,12 +26,12 @@ class AmclAuxLocalization(object):
     Class used to interface with the rover. Gets sensor measurements through ROS subscribers,
     and transforms them into the 2D plane, and publishes velocity commands.
     """
-    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, tag_pose_id, pos_init):
+    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector, tag_pose_id, pos_init):
         """
         Initialize the class
         """
         # Handles all the ROS related items
-        self.ros_interface = ROSInterface(camera_frame_id, base_frame_id, map_frame_id)
+        self.ros_interface = ROSInterface(camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector)
         self.time = rospy.get_time()
         # YOUR CODE AFTER THIS
         #-------------------------------------------#
@@ -85,6 +85,8 @@ def main(args):
     camera_frame_id = np.array(params['camera_frame_id'])
     base_frame_id = np.array(params['base_frame_id'])
     map_frame_id = np.array(params['map_frame_id'])
+    #
+    ns_tag_detector = np.array(params['ns_tag_detector'])
     # tags
     tag_pose_id = np.array(params['tag_pose_id'])
     # Initial pose
@@ -96,7 +98,7 @@ def main(args):
     # camera_frame_id = "usb_cam"
 
     # Intialize the AmclAuxLocalization object
-    amcl_aux_localization = AmclAuxLocalization(camera_frame_id, base_frame_id, map_frame_id, tag_pose_id, pos_init)
+    amcl_aux_localization = AmclAuxLocalization(camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector, tag_pose_id, pos_init)
 
     # Call process_measurements at 10Hz
     r = rospy.Rate(20.0)

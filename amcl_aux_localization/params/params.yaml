@@ -1,4 +1,5 @@
 camera_frame_id: usb_cam
+ns_tag_detector: proc_image
 base_frame_id: base_footprint
 map_frame_id: map
 _t_cam_at_bot:

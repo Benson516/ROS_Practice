@@ -14,7 +14,7 @@
 #include <XmlRpcException.h>
 
 //
-#include <stdio>
+#include <iostream>
 using std::cout;
 //
 
@@ -99,6 +99,13 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
 
   std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray);
   ROS_DEBUG("%d tag detected", (int)detections.size());
+
+  //
+  if (detections.size() > 0){
+    cout << "x: " << detections[0].cxy.first << ", y: " << detections[0].cxy.second << "\n";
+  }
+  //
+
 
   // use projected focal length and principal point
   // these are the correct values

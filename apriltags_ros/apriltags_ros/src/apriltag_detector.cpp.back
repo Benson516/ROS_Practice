@@ -133,7 +133,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   int nRow = gray.rows;
   int nCol = gray.cols;
   //
-  cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2, nRow/2, 300, 300, nRow, nCol);
+  cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2,nRow/2,100,100,nRow, nCol);
   // cv::Mat gray_roi(gray, roi_rect);
   cv::Mat gray_roi = gray(roi_rect).clone();
 
@@ -160,8 +160,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // these are the correct values
 
   // Bounderies of ROI
-  double roi_offset_x = roi_rect.x; // cam_info->roi.x_offset;
-  double roi_offset_y = roi_rect.y; // cam_info->roi.y_offset;
+  double roi_offset_x = cam_info->roi.x_offset;
+  double roi_offset_y = cam_info->roi.y_offset;
   // Focal length in pixel-coordinate
   double fx = cam_info->P[0]; // cam_info->P[0]*1.0, resize 1.0x in x (column)
   double fy = cam_info->P[5]; // cam_info->P[5]*1.0, resize 1.0x in y (raw)

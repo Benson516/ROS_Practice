@@ -2,7 +2,8 @@
 <launch>
 
     <!-- USB Camera -->
-    <include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" />
+    <!-- include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" / -->
+    <include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0_1280_720.launch" />
 
     <!-- Image processing -->
     <node pkg="image_proc" type="image_proc" name="image_proc" output="screen" ns="usb_cam">

@@ -13,6 +13,11 @@
 #include <AprilTags/Tag36h11.h>
 #include <XmlRpcException.h>
 
+//
+#include <stdio>
+using std::cout;
+//
+
 namespace apriltags_ros{
 
 AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): it_(nh){
@@ -73,6 +78,7 @@ AprilTagDetector::~AprilTagDetector(){
 }
 
 void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info){
+  // Get the (raw) image
   cv_bridge::CvImagePtr cv_ptr;
   try{
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -83,6 +89,14 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   }
   cv::Mat gray;
   cv::cvtColor(cv_ptr->image, gray, CV_BGR2GRAY);
+
+
+  // Algorithm of dynamic ROI amd up-sampling
+  /////////////////////////
+
+  /////////////////////////
+
+
   std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray);
   ROS_DEBUG("%d tag detected", (int)detections.size());
 
@@ -93,8 +107,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   double roi_offset_x = cam_info->roi.x_offset;
   double roi_offset_y = cam_info->roi.y_offset;
   // Focal length in pixel-coordinate
-  double fx = cam_info->P[0];
-  double fy = cam_info->P[5];
+  double fx = cam_info->P[0]; // cam_info->P[0]*1.0, resize 1.0x in x (column)
+  double fy = cam_info->P[5]; // cam_info->P[5]*1.0, resize 1.0x in y (raw)
   // Principle points in pixel-coordinate
   double px = (cam_info->P[2] - roi_offset_x);
   double py = (cam_info->P[6] - roi_offset_y);

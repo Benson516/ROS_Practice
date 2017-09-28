@@ -289,7 +289,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     AprilTagDescription description = description_itr->second;
     double tag_size = description.size();
 
-    detection.draw(cv_ptr->image);
+    detection.draw(cv_ptr->image); // TODO: Try using the ROI of the original image instead of using the new image
     Eigen::Matrix4d transform = detection.getRelativeTransform(tag_size, fx, fy, px, py);
     Eigen::Matrix3d rot = transform.block(0,0,3,3);
     Eigen::Quaternion<double> rot_quaternion = Eigen::Quaternion<double>(rot);

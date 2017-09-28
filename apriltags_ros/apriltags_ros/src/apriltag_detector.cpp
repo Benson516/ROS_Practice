@@ -112,6 +112,17 @@ cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int height, int width, int n
 //////////////////////////// Utilities
 
 
+// Global variables
+// TODO: make these variable into the class
+std::vector<AprilTags::TagDetection>	detections;
+cv::Rect roi_rect;
+int count_tag_loss = 0;
+int count_idle_status = 0;
+// Parameters
+int ROI_height = 150; // 300;
+int ROI_width = 150; // 300;
+double resize_scale = 2.0;
+//
 
 
 void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info){
@@ -133,20 +144,103 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   int nRow = gray.rows;
   int nCol = gray.cols;
   //
-  cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2, nRow/2, 300, 300, nRow, nCol);
-  // cv::Mat gray_roi(gray, roi_rect);
-  cv::Mat gray_roi = gray(roi_rect).clone();
+  int Cx, Cy; // Position of the center
+  int ROI_height_set = ROI_height;
+  int ROI_width_set = ROI_width;
+  //
+  if (detections.size() == 0 && count_tag_loss >= 6){
+    // Empty, chose the center area
+    /*
+    // Fixed at the center
+    Cx = nCol/2;
+    Cy = nRow/2;
+    //
+    ROI_height_set = nRow;
+    ROI_width_set = nCol;
+    */
+    //
+    ROI_height_set = nRow/2;
+    ROI_width_set = nCol/2;
+    //
+    switch (count_idle_status){
+      case 0: // Center
+        Cx = nCol/2;
+        Cy = nRow/2;
+        break;
+      case 1: // Left-up
+        Cx = 0;
+        Cy = 0;
+        break;
+      case 2: // Right-up
+        Cx = nCol;
+        Cy = 0;
+        break;
+      case 3: // Right-down
+        Cx = nCol;
+        Cy = nRow;
+        break;
+      case 4: // Left-down
+        Cx = 0;
+        Cy = nRow;
+        //
+        break;
+      default:
+        Cx = nCol/2;
+        Cy = nRow/2;
+        break;
+    }
+    //
+    if (count_idle_status >= 4){
+      count_idle_status = 0;
+    }else{
+      count_idle_status++;
+    }
+    //
+  }else{
+    //
+    if (detections.size() == 0){
+      // Loss the tag for a short time
+      // Leave the Cx and Cy unchanged
+      count_tag_loss++;
+      // Cx = (the latest one)
+      // Cy = (the latest one)
+    }else{
+      // At least one tag in the former frame
+      count_tag_loss = 0;
+      Cx = roi_rect.x + detections[0].cxy.first/resize_scale;
+      Cy = roi_rect.y + detections[0].cxy.second/resize_scale;
+    }
+  }
 
+
+  // Calculate the ROI(s)
+  // cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2, nRow/2, 300, 300, nRow, nCol);
+  // cv::Rect roi_rect = convert_centerPoint_to_ROI(Cx, Cy, 300, 300, nRow, nCol);
+  roi_rect = convert_centerPoint_to_ROI(Cx, Cy, ROI_height_set, ROI_width_set, nRow, nCol);
+  // cv::Mat gray_roi(gray, roi_rect);
+  // cv::Mat gray_roi = gray(roi_rect).clone();
+
+  //
+  // double resize_scale = 2.0;
+  // Size size_new( int(roi_rect.width*resize_scale), int(roi_rect.height*resize_scale) );//the dst image size, Size_(_Tp _width, _Tp _height);
+  cv::Mat gray_roi_resize;
+  // resize(gray_roi, gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale); // interpolation = CV_INTER_LINEAR or CV_INTER_NEAREST
+  resize(gray(roi_rect), gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale, cv::INTER_LANCZOS4); // interpolation = INTER_LANCZOS4, INTER_CUBIC, NTER_AREA, INTER_LINEAR, or INTER_NEAREST
   // cout << "Size of ROI: (" << gray_roi.rows << " x " << gray_roi.cols << ")\n";
 
-  // test
-  cv::cvtColor(gray_roi, cv_ptr->image, CV_GRAY2BGR);
+  // test, print the Cropped image
+  // cv::cvtColor(gray_roi, cv_ptr->image, CV_GRAY2BGR);
+  cv::cvtColor(gray_roi_resize, cv_ptr->image, CV_GRAY2BGR);
   //
 
   /////////////////////////
 
 
-  std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray_roi);
+  // Extract the tags
+  ///////////////////////////////
+  // std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray_roi);
+  // detections = tag_detector_->extractTags(gray_roi);
+  detections = tag_detector_->extractTags(gray_roi_resize);
   ROS_DEBUG("%d tag detected", (int)detections.size());
 
   //
@@ -162,12 +256,20 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // Bounderies of ROI
   double roi_offset_x = roi_rect.x; // cam_info->roi.x_offset;
   double roi_offset_y = roi_rect.y; // cam_info->roi.y_offset;
+  /*
   // Focal length in pixel-coordinate
   double fx = cam_info->P[0]; // cam_info->P[0]*1.0, resize 1.0x in x (column)
   double fy = cam_info->P[5]; // cam_info->P[5]*1.0, resize 1.0x in y (raw)
   // Principle points in pixel-coordinate
   double px = (cam_info->P[2] - roi_offset_x);
   double py = (cam_info->P[6] - roi_offset_y);
+  */
+  // Focal length in pixel-coordinate
+  double fx = cam_info->P[0]*resize_scale; // cam_info->P[0]*1.0, resize 1.0x in x (column)
+  double fy = cam_info->P[5]*resize_scale; // cam_info->P[5]*1.0, resize 1.0x in y (raw)
+  // Principle points in pixel-coordinate
+  double px = (cam_info->P[2] - roi_offset_x)*resize_scale;
+  double py = (cam_info->P[6] - roi_offset_y)*resize_scale;
   //
 
 

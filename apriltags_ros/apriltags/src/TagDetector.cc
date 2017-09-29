@@ -65,15 +65,15 @@ namespace AprilTags {
 
     // TODO 2. Gaussian filtering with sigma = 0.8, window = 5x5
     cv::Mat image_float_blur;
-    GaussianBlur(image_float, image_float_blur, cv::Size( 3, 3), 0.8); // sigma = 2.0, window size = 5x5
+    GaussianBlur(image_float, image_float_blur, cv::Size( 5, 5), 0.8); // sigma = 2.0, window size = 5x5
 
     // TODO 3. Copy the image to FloatImage fimSeg
     AprilTags::FloatImage fimSeg(width, height);
     int i = 0;
     for (int y=0; y<height; y++) {
       for (int x=0; x<width; x++) {
-        fimSeg.set(x, y, image_float_blur.data[i]);
-        // fimSeg.pixels[i] = image_float_blur.data[i];
+        // fimSeg.set(x, y, image_float_blur.data[i]);
+        fimSeg.pixels[i] = image_float_blur.data[i];
         i++;
       }
     }
@@ -485,8 +485,7 @@ namespace AprilTags {
 	  continue;
     //
     // float v = fim.get(irx, iry);
-    float v = fimSeg.get(irx, iry);
-    // float v = image.at<uchar>(irx, iry);
+    float v = image.at<uchar>(irx, iry);
     //
 	if (iy == -1 || iy == dd || ix == -1 || ix == dd)
 	  whiteModel.addObservation(x, y, v);
@@ -512,8 +511,7 @@ namespace AprilTags {
 	float threshold = (blackModel.interpolate(x,y) + whiteModel.interpolate(x,y)) * 0.5f;
     //
     // float v = fim.get(irx, iry);
-    float v = fimSeg.get(irx, iry);
-    // float v = image.at<uchar>(irx, iry);
+    float v = image.at<uchar>(irx, iry);
     //
 	tagCode = tagCode << 1;
 	if ( v > threshold)

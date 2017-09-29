@@ -72,7 +72,8 @@ namespace AprilTags {
     int i = 0;
     for (int y=0; y<height; y++) {
       for (int x=0; x<width; x++) {
-        fimSeg.set(x, y, image_float_blur.data[i]);
+        // fimSeg.set(x, y, image_float_blur.data[i]);
+        fimSeg.pixels[i] = image_float_blur.data[i];
         i++;
       }
     }

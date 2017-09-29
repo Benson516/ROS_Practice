@@ -65,7 +65,7 @@ namespace AprilTags {
 
     // TODO 2. Gaussian filtering with sigma = 0.8, window = 5x5
     cv::Mat image_float_blur;
-    GaussianBlur(image_float, image_float_blur, Size( 5, 5), 0.8); // sigma = 2.0, window size = 5x5
+    GaussianBlur(image_float, image_float_blur, cv::Size( 5, 5), 0.8); // sigma = 2.0, window size = 5x5
 
     // TODO 3. Copy the image to FloatImage fimSeg
     AprilTags::FloatImage fimSeg(width, height);
@@ -429,7 +429,9 @@ namespace AprilTags {
   vector<Segment*> tmp(5);
   for (unsigned int i = 0; i < segments.size(); i++) {
     tmp[0] = &segments[i];
-    Quad::search(fimOrig, tmp, segments[i], 0, quads, opticalCenter);
+    // Quad::search(fimOrig, tmp, segments[i], 0, quads, opticalCenter);
+    Quad::search(fimSeg, tmp, segments[i], 0, quads, opticalCenter);
+
   }
 
 #ifdef DEBUG_APRIL

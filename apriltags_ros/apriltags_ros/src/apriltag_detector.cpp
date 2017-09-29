@@ -217,8 +217,13 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2, nRow/2, 300, 300, nRow, nCol);
   // cv::Rect roi_rect = convert_centerPoint_to_ROI(Cx, Cy, 300, 300, nRow, nCol);
   roi_rect = convert_centerPoint_to_ROI(Cx, Cy, ROI_height_set, ROI_width_set, nRow, nCol);
-  // cv::Mat gray_roi(gray, roi_rect);
   // cv::Mat gray_roi = gray(roi_rect).clone();
+
+  // Histogram Equalization for solving the lighting problem
+  // cv::Mat gray_roi_enhanced;
+  // gray(roi_rect).convertTo(gray_roi_enhanced, -1, 2.0, -128 ); // I_out = 2.0*I_in + (-128) // -1 stands for the same type
+  // GaussianBlur(gray(roi_rect), gray_roi_enhanced, cv::Size(5,5), 2.0); // sigma = 2.0
+  // cout << "gray_roi_enhanced.rows = " << gray_roi_enhanced.rows << ", gray_roi_enhanced.cols = " << gray_roi_enhanced.cols << "\n";
 
   //
   // double resize_scale = 2.0;
@@ -226,6 +231,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   cv::Mat gray_roi_resize;
   // resize(gray_roi, gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale); // interpolation = CV_INTER_LINEAR or CV_INTER_NEAREST
   resize(gray(roi_rect), gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale, cv::INTER_LANCZOS4); // interpolation = INTER_LANCZOS4, INTER_CUBIC, NTER_AREA, INTER_LINEAR, or INTER_NEAREST
+  // resize( gray_roi_enhanced, gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale, cv::INTER_LANCZOS4); // interpolation = INTER_LANCZOS4, INTER_CUBIC, NTER_AREA, INTER_LINEAR, or INTER_NEAREST
   // cout << "Size of ROI: (" << gray_roi.rows << " x " << gray_roi.cols << ")\n";
 
   // test, print the Cropped image
@@ -244,9 +250,11 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   ROS_DEBUG("%d tag detected", (int)detections.size());
 
   //
+  /*
   if (detections.size() > 0){
     cout << "x: " << detections[0].cxy.first << ", y: " << detections[0].cxy.second << "\n";
   }
+  */
   //
 
 

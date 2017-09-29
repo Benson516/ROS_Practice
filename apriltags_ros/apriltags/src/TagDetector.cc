@@ -485,7 +485,7 @@ namespace AprilTags {
 	  continue;
     //
     // float v = fim.get(irx, iry);
-    float v = image.at<uchar>(irx, iry);
+    float v = image.at(irx, iry);
     //
 	if (iy == -1 || iy == dd || ix == -1 || ix == dd)
 	  whiteModel.addObservation(x, y, v);
@@ -511,7 +511,7 @@ namespace AprilTags {
 	float threshold = (blackModel.interpolate(x,y) + whiteModel.interpolate(x,y)) * 0.5f;
     //
     // float v = fim.get(irx, iry);
-    float v = image.at<uchar>(irx, iry);
+    float v = image.at(irx, iry);
     //
 	tagCode = tagCode << 1;
 	if ( v > threshold)

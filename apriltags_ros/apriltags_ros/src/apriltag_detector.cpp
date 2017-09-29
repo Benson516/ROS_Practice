@@ -119,9 +119,9 @@ cv::Rect roi_rect;
 int count_tag_loss = 0;
 int count_idle_status = 0;
 // Parameters
-int ROI_height = 150; // 300;
-int ROI_width = 150; // 300;
-double resize_scale = 2.0;
+int ROI_height = 300; // 220; // 150; // 300;
+int ROI_width = 300; // 220; // 150; // 300;
+double resize_scale = 1.0; // 1.2;
 //
 
 

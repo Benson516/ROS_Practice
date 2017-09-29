@@ -35,6 +35,22 @@
       {id: 13, size: 0.0641},
       {id: 14, size: 0.0641},
       {id: 15, size: 0.0641},
+      {id: 16, size: 0.0641},
+      {id: 17, size: 0.0641},
+      {id: 18, size: 0.0641},
+      {id: 19, size: 0.0641},
+      {id: 20, size: 0.0641},
+      {id: 21, size: 0.0641},
+      {id: 22, size: 0.0641},
+      {id: 23, size: 0.0641},
+      {id: 24, size: 0.0641},
+      {id: 25, size: 0.0641},
+      {id: 26, size: 0.0641},
+      {id: 27, size: 0.0641},
+      {id: 28, size: 0.0340},
+      {id: 29, size: 0.0641},
+      {id: 30, size: 0.0641},
+      {id: 31, size: 0.0641},
       ]
     </rosparam>
     <!-- remap from="image_rect" to="image_raw"/ -->

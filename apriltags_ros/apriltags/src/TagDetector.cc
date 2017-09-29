@@ -38,7 +38,7 @@ using namespace std;
 
 namespace AprilTags {
 
-  std::vector<TagDetection> TagDetector::extractTags(const cv::Mat& image) {
+  std::vector<TagDetection> TagDetector::extractTags(cv::Mat& image) {
 
     // convert to internal AprilTags image (todo: slow, change internally to OpenCV)
     int width = image.cols;
@@ -60,7 +60,7 @@ namespace AprilTags {
     // TODO 1. Convert the image to float and rerange to [0, 1]
     cv::Mat image_float;
     double factor_U8To32F = 1./255.;
-    image.convertTo(image_float, CV_32FC1); // From U8_C1 to 32FC1
+    image.convertTo(image_float CV_32FC1); // From U8_C1 to 32FC1
     image_float *= factor_U8To32F;
 
     // TODO 2. Gaussian filtering with sigma = 0.8, window = 5x5

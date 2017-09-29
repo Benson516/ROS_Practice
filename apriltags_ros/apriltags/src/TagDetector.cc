@@ -1,6 +1,3 @@
-
-#include <omp.h>
-
 #include <algorithm>
 #include <cmath>
 #include <climits>
@@ -43,8 +40,6 @@ namespace AprilTags {
     // convert to internal AprilTags image (todo: slow, change internally to OpenCV)
     int width = image.cols;
     int height = image.rows;
-
-    /*
     AprilTags::FloatImage fimOrig(width, height);
     int i = 0;
     for (int y=0; y<height; y++) {
@@ -53,29 +48,7 @@ namespace AprilTags {
         i++;
       }
     }
-    */
     std::pair<int,int> opticalCenter(width/2, height/2);
-
-
-    // TODO 1. Convert the image to float and rerange to [0, 1]
-    cv::Mat image_float;
-    double factor_U8To32F = 1./255.;
-    image.convertTo(image_float CV_32FC1); // From U8_C1 to 32FC1
-    image_float *= factor_U8To32F;
-
-    // TODO 2. Gaussian filtering with sigma = 0.8, window = 5x5
-    cv::Mat image_float_blur;
-    GaussianBlur(image_float, image_float_blur, cv::Size( 5, 5), 0.8); // sigma = 2.0, window size = 5x5
-
-    // TODO 3. Copy the image to FloatImage fimSeg
-    AprilTags::FloatImage fimSeg(width, height);
-    int i = 0;
-    for (int y=0; y<height; y++) {
-      for (int x=0; x<width; x++) {
-        fimSeg.set(x, y, image_float_blur.data[i]);
-        i++;
-      }
-    }
 
 #ifdef DEBUG_APRIL
 #if 0
@@ -124,8 +97,8 @@ namespace AprilTags {
   //================================================================
   // Step one: preprocess image (convert to grayscale) and low pass if necessary
 
-
-
+  FloatImage fim = fimOrig;
+  
   //! Gaussian smoothing kernel applied to image (0 == no filter).
   /*! Used when sampling bits. Filtering is a good idea in cases
    * where A) a cheap camera is introducing artifical sharpening, B)
@@ -134,7 +107,7 @@ namespace AprilTags {
    * harder to decode very small tags. Reasonable values are 0, or
    * [0.8, 1.5].
    */
-
+  float sigma = 0;
 
   //! Gaussian smoothing kernel applied to image (0 == no filter).
   /*! Used when detecting the outline of the box. It is almost always
@@ -145,15 +118,11 @@ namespace AprilTags {
    */
   float segSigma = 0.8f;
 
-  /*
-  float sigma = 0;
-  FloatImage fim = fimOrig;
   if (sigma > 0) {
     int filtsz = ((int) max(3.0f, 3*sigma)) | 1;
     std::vector<float> filt = Gaussian::makeGaussianFilter(sigma, filtsz);
     fim.filterFactoredCentered(filt, filt);
   }
-  */
 
   //================================================================
   // Step two: Compute the local gradient. We store the direction and magnitude.
@@ -161,7 +130,6 @@ namespace AprilTags {
   // break up segments, causing us to miss Quads. It is useful to do a Gaussian
   // low pass on this step even if we don't want it for encoding.
 
-  /*
   FloatImage fimSeg;
   if (segSigma > 0) {
     if (segSigma == sigma) {
@@ -176,13 +144,10 @@ namespace AprilTags {
   } else {
     fimSeg = fimOrig;
   }
-  */
-
-
 
   FloatImage fimTheta(fimSeg.getWidth(), fimSeg.getHeight());
   FloatImage fimMag(fimSeg.getWidth(), fimSeg.getHeight());
-
+  
 
   #pragma omp parallel for
   for (int y = 1; y < fimSeg.getHeight()-1; y++) {
@@ -196,7 +161,7 @@ namespace AprilTags {
 #else
       float theta = atan2(Iy, Ix);
 #endif
-
+      
       fimTheta.set(x, y, theta);
       fimMag.set(x, y, mag);
     }
@@ -228,7 +193,7 @@ namespace AprilTags {
   // thetas together. This is a greedy algorithm: we start with
   // the most similar pixels.  We use 4-connectivity.
   UnionFindSimple uf(fimSeg.getWidth()*fimSeg.getHeight());
-
+  
   vector<Edge> edges(width*height*4);
   size_t nEdges = 0;
 
@@ -244,33 +209,33 @@ namespace AprilTags {
     float * tmax = &storage[width*height*1];
     float * mmin = &storage[width*height*2];
     float * mmax = &storage[width*height*3];
-
+                  
     for (int y = 0; y+1 < height; y++) {
       for (int x = 0; x+1 < width; x++) {
-
+                                  
         float mag0 = fimMag.get(x,y);
         if (mag0 < Edge::minMag)
           continue;
         mmax[y*width+x] = mag0;
         mmin[y*width+x] = mag0;
-
+                                  
         float theta0 = fimTheta.get(x,y);
         tmin[y*width+x] = theta0;
         tmax[y*width+x] = theta0;
-
+                                  
         // Calculates then adds edges to 'vector<Edge> edges'
         Edge::calcEdges(theta0, x, y, fimTheta, fimMag, edges, nEdges);
-
+                                  
         // XXX Would 8 connectivity help for rotated tags?
         // Probably not much, so long as input filtering hasn't been disabled.
       }
     }
-
+                  
     edges.resize(nEdges);
     std::stable_sort(edges.begin(), edges.end());
     Edge::mergeEdges(edges,uf,tmin,tmax,mmin,mmax);
   }
-
+          
   //================================================================
   // Step four: Loop over the pixels again, collecting statistics for each cluster.
   // We will soon fit lines (segments) to these points.
@@ -279,14 +244,14 @@ namespace AprilTags {
   for (int y = 0; y+1 < fimSeg.getHeight(); y++) {
     for (int x = 0; x+1 < fimSeg.getWidth(); x++) {
       if (uf.getSetSize(y*fimSeg.getWidth()+x) < Segment::minimumSegmentSize)
-	    continue;
+	continue;
 
       int rep = (int) uf.getRepresentative(y*fimSeg.getWidth()+x);
-
+     
       map<int, vector<XYWeight> >::iterator it = clusters.find(rep);
       if ( it == clusters.end() ) {
-	        clusters[rep] = vector<XYWeight>();
-	        it = clusters.find(rep);
+	clusters[rep] = vector<XYWeight>();
+	it = clusters.find(rep);
       }
       vector<XYWeight> &points = it->second;
       points.push_back(XYWeight(x,y,fimMag.get(x,y)));
@@ -325,7 +290,7 @@ namespace AprilTags {
     float flip = 0, noflip = 0;
     for (unsigned int i = 0; i < points.size(); i++) {
       XYWeight xyw = points[i];
-
+      
       float theta = fimTheta.get((int) xyw.x, (int) xyw.y);
       float mag = fimMag.get((int) xyw.x, (int) xyw.y);
 
@@ -375,18 +340,18 @@ namespace AprilTags {
   // (We will chain segments together next...) The gridder accelerates the search by
   // building (essentially) a 2D hash table.
   Gridder<Segment> gridder(0,0,width,height,10);
-
+  
   // add every segment to the hash table according to the position of the segment's
   // first point. Remember that the first point has a specific meaning due to our
   // left-hand rule above.
   for (unsigned int i = 0; i < segments.size(); i++) {
     gridder.add(segments[i].getX0(), segments[i].getY0(), &segments[i]);
   }
-
+  
   // Now, find child segments that begin where each parent segment ends.
   for (unsigned i = 0; i < segments.size(); i++) {
     Segment &parentseg = segments[i];
-
+      
     //compute length of the line segment
     GLine2D parentLine(std::pair<float,float>(parentseg.getX0(), parentseg.getY0()),
 		       std::pair<float,float>(parentseg.getX1(), parentseg.getY1()));
@@ -424,13 +389,11 @@ namespace AprilTags {
   // Step seven: Search all connected segments to see if any form a loop of length 4.
   // Add those to the quads list.
   vector<Quad> quads;
-
+  
   vector<Segment*> tmp(5);
   for (unsigned int i = 0; i < segments.size(); i++) {
     tmp[0] = &segments[i];
-    // Quad::search(fimOrig, tmp, segments[i], 0, quads, opticalCenter);
-    Quad::search(fimSeg, tmp, segments[i], 0, quads, opticalCenter);
-
+    Quad::search(fimOrig, tmp, segments[i], 0, quads, opticalCenter);
   }
 
 #ifdef DEBUG_APRIL
@@ -482,10 +445,7 @@ namespace AprilTags {
 	int iry = (int) (pxy.second + 0.5);
 	if (irx < 0 || irx >= width || iry < 0 || iry >= height)
 	  continue;
-    //
-    // float v = fim.get(irx, iry);
-    float v = image.at(irx, iry);
-    //
+	float v = fim.get(irx, iry);
 	if (iy == -1 || iy == dd || ix == -1 || ix == dd)
 	  whiteModel.addObservation(x, y, v);
 	else if (iy == 0 || iy == (dd-1) || ix == 0 || ix == (dd-1))
@@ -508,10 +468,7 @@ namespace AprilTags {
 	  continue;
 	}
 	float threshold = (blackModel.interpolate(x,y) + whiteModel.interpolate(x,y)) * 0.5f;
-    //
-    // float v = fim.get(irx, iry);
-    float v = image.at(irx, iry);
-    //
+	float v = fim.get(irx, iry);
 	tagCode = tagCode << 1;
 	if ( v > threshold)
 	  tagCode |= 1;

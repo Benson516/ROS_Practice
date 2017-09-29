@@ -2,6 +2,9 @@
 Changelog for package apriltags
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.2 (2016-07-06)
+------------------
+
 0.1.1 (2014-11-14)
 ------------------
 * Updated author and website

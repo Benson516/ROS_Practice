@@ -16,11 +16,9 @@ class FloatImage {
 private:
   int width;
   int height;
-  // std::vector<float> pixels;
+  std::vector<float> pixels;
 
 public:
-  // Pixel data
-  std::vector<float> pixels;
 
   //! Default constructor
   FloatImage();

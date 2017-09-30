@@ -113,7 +113,7 @@ cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int height, int width, int n
 
 
 // Global variables
-// TODO: make these variable into the class
+// TODO: make these variables into the class
 std::vector<AprilTags::TagDetection>	detections;
 cv::Rect roi_rect;
 int count_tag_loss = 0;

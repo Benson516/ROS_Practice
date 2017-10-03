@@ -79,7 +79,7 @@ AprilTagDetector::~AprilTagDetector(){
 
 // Utilities
 ////////////////////////////
-cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int height, int width, int nRow, int nCol){
+cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int width, int height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0){
     int half_height = height/2;
     int half_width = width/2;
     //
@@ -89,20 +89,20 @@ cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int height, int width, int n
     int y_H = y_L + height;
 
     // Fix range, x
-    if (x_L < 0){
-        x_H -= x_L;
-        x_L = 0;
-    }else if(x_H > nCol){
-        x_L -= x_H - nCol;
-        x_H = nCol;
+    if (x_L < x_lowerBound){
+        x_H += x_lowerBound - x_L;
+        x_L = x_lowerBound;
+    }else if(x_H > x_upperbound){
+        x_L -= x_H - x_upperbound;
+        x_H = x_upperbound;
     }
     // Fix range, y
-    if (y_L < 0){
-        y_H -= y_L;
-        y_L = 0;
-    }else if(y_H > nRow){
-        y_L -= y_H - nRow;
-        y_H = nRow;
+    if (y_L < y_lowerBound){
+        y_H += y_lowerBound - y_L;
+        y_L = y_lowerBound;
+    }else if(y_H > y_upperbound){
+        y_L -= y_H - y_upperbound;
+        y_H = y_upperbound;
     }
 
     // x, y, width, height
@@ -118,10 +118,19 @@ std::vector<AprilTags::TagDetection>	detections;
 cv::Rect roi_rect;
 int count_tag_loss = 0;
 int count_idle_status = 0;
+// Speed estimation, pixel/sample
+// double speed_filterRatio = 0.5;
+double speed_x = 0;
+double speed_y = 0;
 // Parameters
-int ROI_height = 300; // 220; // 150; // 300;
-int ROI_width = 300; // 220; // 150; // 300;
+int x_border = 300; // 280; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
+int y_border = 20; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
+int ROI_height = 250; // 220; // 150; // 300;
+int ROI_width = 250; // 220; // 150; // 300;
 double resize_scale = 1.0; // 1.2;
+// Sharpen
+double retain_ratio = 0.2;
+double enhancement_ratio = 6.0; // 12.0; // 6.0
 //
 
 
@@ -135,20 +144,23 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
+  int nRow = cv_ptr->image.rows;
+  int nCol = cv_ptr->image.cols;
+
   cv::Mat gray;
   cv::cvtColor(cv_ptr->image, gray, CV_BGR2GRAY);
 
 
   // Algorithm of dynamic ROI amd up-sampling
   /////////////////////////
-  int nRow = gray.rows;
-  int nCol = gray.cols;
+  nRow = gray.rows;
+  nCol = gray.cols;
   //
   int Cx, Cy; // Position of the center
   int ROI_height_set = ROI_height;
   int ROI_width_set = ROI_width;
   //
-  if (detections.size() == 0 && count_tag_loss >= 6){
+  if (detections.size() == 0 && count_tag_loss >= 10){
     // Empty, chose the center area
     /*
     // Fixed at the center
@@ -159,8 +171,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     ROI_width_set = nCol;
     */
     //
-    ROI_height_set = nRow/2;
-    ROI_width_set = nCol/2;
+    ROI_height_set = nRow/2 - y_border;
+    ROI_width_set = nCol/2 - x_border;
     //
     switch (count_idle_status){
       case 0: // Center
@@ -189,7 +201,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
         Cy = nRow/2;
         break;
     }
-    //
+    // Return to 0
     if (count_idle_status >= 4){
       count_idle_status = 0;
     }else{
@@ -204,19 +216,36 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
       count_tag_loss++;
       // Cx = (the latest one)
       // Cy = (the latest one)
+      Cx += int(speed_x);
+      Cy += int(speed_y);
     }else{
       // At least one tag in the former frame
+
+      //
+      int Cx_last = roi_rect.x + detections[0].cxy.first/resize_scale;
+      int Cy_last = roi_rect.y + detections[0].cxy.second/resize_scale;
+      //
+      if(count_tag_loss != 0){
+        speed_x = 0.0;
+        speed_y = 0.0;
+      }else{
+        speed_x = double(Cx_last - Cx);
+        speed_y = double(Cy_last - Cy);
+        // speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
+        // speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
+      }
+      //
+      Cx = Cx_last + int(speed_x);
+      Cy = Cy_last + int(speed_y);
+      //
       count_tag_loss = 0;
-      Cx = roi_rect.x + detections[0].cxy.first/resize_scale;
-      Cy = roi_rect.y + detections[0].cxy.second/resize_scale;
     }
   }
 
 
   // Calculate the ROI(s)
-  // cv::Rect roi_rect = convert_centerPoint_to_ROI(nCol/2, nRow/2, 300, 300, nRow, nCol);
-  // cv::Rect roi_rect = convert_centerPoint_to_ROI(Cx, Cy, 300, 300, nRow, nCol);
-  roi_rect = convert_centerPoint_to_ROI(Cx, Cy, ROI_height_set, ROI_width_set, nRow, nCol);
+  // ------ convert_centerPoint_to_ROI(int Cx, int Cy, int width, int height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0)
+  roi_rect = convert_centerPoint_to_ROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border);
   // cv::Mat gray_roi = gray(roi_rect).clone();
 
   // Histogram Equalization for solving the lighting problem
@@ -234,9 +263,15 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // resize( gray_roi_enhanced, gray_roi_resize, cv::Size(0,0), resize_scale, resize_scale, cv::INTER_LANCZOS4); // interpolation = INTER_LANCZOS4, INTER_CUBIC, NTER_AREA, INTER_LINEAR, or INTER_NEAREST
   // cout << "Size of ROI: (" << gray_roi.rows << " x " << gray_roi.cols << ")\n";
 
+  //
+  cv::Mat gray_roi_enhanced;
+  cv::GaussianBlur(gray_roi_resize, gray_roi_enhanced, cv::Size(0, 0), 3); // sigma = 3
+  cv::addWeighted(gray_roi_resize, (retain_ratio + enhancement_ratio), gray_roi_enhanced, (-enhancement_ratio), 0, gray_roi_enhanced); // 1 + 0.5*(1-blur)
+
   // test, print the Cropped image
   // cv::cvtColor(gray_roi, cv_ptr->image, CV_GRAY2BGR);
-  cv::cvtColor(gray_roi_resize, cv_ptr->image, CV_GRAY2BGR);
+  // cv::cvtColor(gray_roi_resize, cv_ptr->image, CV_GRAY2BGR);
+  cv::cvtColor(gray_roi_enhanced, cv_ptr->image, CV_GRAY2BGR);
   //
 
   /////////////////////////
@@ -244,9 +279,9 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
 
   // Extract the tags
   ///////////////////////////////
-  // std::vector<AprilTags::TagDetection>	detections = tag_detector_->extractTags(gray_roi);
   // detections = tag_detector_->extractTags(gray_roi);
-  detections = tag_detector_->extractTags(gray_roi_resize);
+  // detections = tag_detector_->extractTags(gray_roi_resize);
+  detections = tag_detector_->extractTags(gray_roi_enhanced);
   ROS_DEBUG("%d tag detected", (int)detections.size());
 
   //

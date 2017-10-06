@@ -79,9 +79,10 @@ AprilTagDetector::~AprilTagDetector(){
 
 // Utilities
 ////////////////////////////
+// Upperbound indexes to the point that is not included.
 cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int width, int height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0){
-    int half_height = height/2;
     int half_width = width/2;
+    int half_height = height/2;
     //
     int x_L = Cx - half_width;
     int y_L = Cy - half_height;
@@ -109,12 +110,55 @@ cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int width, int height, int x
     cv::Rect rect(x_L, y_L, (x_H - x_L), (y_H - y_L));
     return rect;
 }
+// Scan through the entire image
+// Upperbound indexes to the point that is not included.
+void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0){
+    int half_width = width/2;
+    int half_height = height/2;
+    //
+    int x_L = (Cx - half_width) + width;
+    int y_L = Cy - half_height;
+    //
+    if (x_L >= x_upperbound){
+        // To the next line
+        x_L = x_lowerBound;
+        y_L = rect_pre.y + height;
+        //
+        if (y_L >= y_upperbound){
+            // To the left-top corner
+            y_L = y_lowerBound;
+        }
+    }
+
+    // Index saturation
+    int x_H = x_L + width;
+    int y_H = y_L + height;
+
+    // Fix range, x
+    if(x_H > x_upperbound){
+        // x_L -= x_H - x_upperbound;
+        x_H = x_upperbound;
+    }
+    // Fix range, y
+    if(y_H > y_upperbound){
+        // y_L -= y_H - y_upperbound;
+        y_H = y_upperbound;
+    }
+
+    // Recalculate the Cx, Cy, width, and height
+    Cx = (x_L + x_H)/2;
+    Cy = (y_L + y_H)/2;
+    width = (x_H - x_L);
+    height = (y_H - y_L);
+
+}
 //////////////////////////// Utilities
 
 
 // Global variables
 // TODO: make these variables into the class
-std::vector<AprilTags::TagDetection>	detections;
+std::vector<AprilTags::TagDetection> detections;
+cv::Rect roi_idleScan;
 cv::Rect roi_rect;
 int count_tag_loss = 0;
 int count_idle_status = 0;
@@ -170,13 +214,15 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     ROI_height_set = nRow;
     ROI_width_set = nCol;
     */
+
+    /*
     //
     ROI_height_set = nRow/2 - y_border;
     ROI_width_set = nCol/2 - x_border;
-    
+
     // For test
     // count_idle_status = 1;
-    // 
+    //
     switch (count_idle_status){
       case 0: // Center
         Cx = nCol/2;
@@ -210,7 +256,12 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     }else{
       count_idle_status++;
     }
-    //
+    */
+
+    // Move the ROI by z-type scan sequnce
+    MoveTheROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border);
+
+    // Reset the speed
     speed_x = 0;
     speed_y = 0;
   }else{

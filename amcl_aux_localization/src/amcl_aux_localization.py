@@ -49,7 +49,8 @@ class AmclAuxLocalization(object):
         This function is called at 10Hz
         """
         # tag_measurement = self.ros_interface.get_measurements()
-        tag_measurement = self.ros_interface.get_measurements_tf()
+        # tag_measurement = self.ros_interface.get_measurements_tf()
+        tag_measurement = self.ros_interface.get_measurements_tf_directMethod()
         # amcl_pose = self.ros_interface.get_amcl_pose()
 
         print '-----------------'

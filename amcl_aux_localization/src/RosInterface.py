@@ -45,7 +45,7 @@ class ROSInterface(object):
     Class used to interface with the rover. Gets sensor measurements through ROS subscribers,
     and transforms them into the 2D plane, and publishes velocity commands.
     """
-    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector):
+    def __init__(self, camera_frame_id, base_frame_id, odom_frame_id, map_frame_id, ns_tag_detector):
         """
         Initialize the class
         """
@@ -60,6 +60,7 @@ class ROSInterface(object):
         # tf frames
         self.camera_frame = "/%s" % camera_frame_id # /usb_cam
         self.base_frame = "/%s" % base_frame_id # "/base_footprint"
+        self.odom_frame = "/%s" % odom_frame_id # "/odom"
         self.map_frame = "/%s" % map_frame_id # "/map"
         # Name space
         self.ns_tag_detector = "/%s" % ns_tag_detector #"/proc_image"
@@ -213,18 +214,19 @@ class ROSInterface(object):
                 self.tf_listener.waitForTransform(self.base_frame, tagFramName, now, rospy.Duration(0.5))
                 (trans, quaternion) = self.tf_listener.lookupTransform(self.base_frame,tagFramName, now)
                 """
+                # Intergrating the odom:
                 # The transformation method which will compensate the delay
-                # Since the tags are not moving, we can first project the tags to the /map at the time they were discoverd,
-                # and then calculate the tranformation from /basefootprint to /map at now
+                # Since the tags are not moving, we can first project the tags to the /odom at the time they were discoverd,
+                # and then calculate the tranformation from /basefootprint to /odom at now
                 now = rospy.Time.now()
-                past = self.tf_listener.getLatestCommonTime(self.camera_frame, tagFramName) # Note that its from /usb_cam to /tag_xx
+                time_tag_was_found = self.tf_listener.getLatestCommonTime(self.camera_frame, tagFramName) # Note that its from /usb_cam to /tag_xx
                 self.tf_listener.waitForTransformFull(self.base_frame, now,
-                                              tagFramName, past,
-                                              self.map_frame, rospy.Duration(0.5))
+                                                        tagFramName, time_tag_was_found,
+                                                        self.odom_frame, rospy.Duration(0.5))
                 (trans, quaternion) = self.tf_listener.lookupTransformFull(self.base_frame, now,
-                                                                    tagFramName, past,
-                                                                    self.map_frame)
-                print "--Successfully got the tf of the tag!!--"                                                    
+                                                                            tagFramName, time_tag_was_found,
+                                                                            self.odom_frame)
+                print "--Successfully got the tf of the tag!!--"
                 # print "trans =", trans
                 _t_tag_at_bot = np.transpose(np.matrix([trans[0], trans[1], trans[2],1.0]))
                 # print "_t_tag_at_bot =", _t_tag_at_bot

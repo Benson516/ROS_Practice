@@ -3,10 +3,6 @@ ns_tag_detector: usb_cam # proc_image
 base_frame_id: base_footprint
 odom_frame_id: odom
 map_frame_id: map
-_t_cam_at_bot:
-- [0.0]
-- [0.0]
-- [0.0]
 initial_pose:
 - [0.0]
 - [0.0]

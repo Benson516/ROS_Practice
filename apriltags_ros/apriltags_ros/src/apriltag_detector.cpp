@@ -178,7 +178,7 @@ double speed_filterRatio = 0.5;
 double speed_x = 0;
 double speed_y = 0;
 // Parameters
-int x_border = 300; // 280; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
+int x_border = 300; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
 int y_border = 20; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
 int ROI_height = 250; // 220; // 150; // 300;
 int ROI_width = 250; // 220; // 150; // 300;
@@ -225,7 +225,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     ROI_width_set = nCol;
     */
 
-    /*
+    /*    
     //
     ROI_height_set = nRow/2 - y_border;
     ROI_width_set = nCol/2 - x_border;
@@ -268,25 +268,18 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     }
     */
 
-
+    
     //
-    /*
-    ROI_width_set = (nCol - 2*x_border)/3;
-    ROI_height_set = (nRow - 2*y_border)/3;
-    */
+    // ROI_width_set = (nCol - 2*x_border)/3;
+    // ROI_height_set = (nRow - 2*y_border)/3;
     ROI_width_set = ROI_width/2*3;
     ROI_height_set = ROI_height/2*3;
 
-    //
-    /*
-    Cx = roi_rect.x + roi_rect.width/2;
-    Cy = roi_rect.y + roi_rect.height/2;
-    */
-
+    //   
     // Move the ROI by z-type scan sequnce
     MoveTheROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border, (ROI_width_set), (ROI_height_set));
     // MoveTheROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border, (ROI_width_set)/2, (ROI_height_set)/2);
-
+    
 
     // Reset the speed
     speed_x = 0;

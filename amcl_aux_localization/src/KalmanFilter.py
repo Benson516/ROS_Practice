@@ -241,10 +241,25 @@ class KalmanFilter:
             y_meas = H_robot_2_world[1,2]
             theta_meas = atan2(H_robot_2_world[1,0],H_robot_2_world[0,0])
             """
-            x_y_1_meas = self.H_marker_2_world[id_marker].dot( H_robot_2_marker.dot(self.homography_zeroVec) )
-            # x_meas = x_y_1_meas[0,0]
-            # y_meas = x_y_1_meas[1,0]
-            theta_meas = self.dict_markers[id_marker][2] - tag_pose[2]
+            try:
+                x_y_1_meas = self.H_marker_2_world[id_marker].dot( H_robot_2_marker.dot(self.homography_zeroVec) )
+                # x_meas = x_y_1_meas[0,0]
+                # y_meas = x_y_1_meas[1,0]
+                theta_meas = self.dict_markers[id_marker][2] - tag_pose[2]
+            except: # No such tag in the dictionaries
+                print ("=== Unexpected tag found: #%d" % id_marker)
+                #
+                num_markers = num_markers - 1 # Don't count this marker
+                #
+                print "=== New num_markers =", num_markers
+                #
+                if num_markers <= 0:
+                    print "=== No any known tag, return..."
+                    return (self.mu_est, self.Sigma_est) # No-tag, return
+                else:
+                    print "=== Skip this tag."
+                    continue # Keep the for-loop
+            #
             # pi_2 = 2.0*np.pi
             if theta_meas > np.pi:
                 theta_meas -= pi_2
@@ -273,16 +288,21 @@ class KalmanFilter:
         # print (x_meas_apriltag_list[0]).shape
         # print "x_meas_apriltag_list[0]", x_meas_apriltag_list[0]
 
+        #
+        # output: num_markers, x_meas_apriltag_list, cov_sum
+        #
 
-        # Calculate the pose-error related to each measured-pose by apriltag
+
+        #
         # pi_2 = 2.0*np.pi
         if self.mu_est[2,0] > np.pi:
             self.mu_est[2,0] -= pi_2
         elif self.mu_est[2,0] <= -np.pi:
             self.mu_est[2,0] += pi_2
         #
+        # Calculate the pose-error related to each measured-pose by apriltag
         error_sum = np.zeros((3,1))
-        for i in range(num_markers):
+        for i in range( len(x_meas_apriltag_list) ): # range(num_markers):
             """
             print type(x_meas_apriltag_list[i])
             print (x_meas_apriltag_list[i]).shape

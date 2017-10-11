@@ -470,6 +470,9 @@ class KalmanFilter:
             if not (amcl_pose is None):
                 self.mu_est = amcl_pose[0]
                 self.Sigma_est = amcl_pose[1]
+                #
+                stamp_amclPose = amcl_pose[2] # test
+                #
                 print "Before--"
                 print "mu_est",self.mu_est
                 print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"
@@ -481,7 +484,8 @@ class KalmanFilter:
             # Update
             self.update(z_t)
             # Fix the prediction of the amcl_pose
-            ros_interface.set_amcl_pose(self.mu_est,self.Sigma_est)
+            # ros_interface.set_amcl_pose(self.mu_est,self.Sigma_est)
+            ros_interface.set_amcl_pose_timeStampIn(self.mu_est,self.Sigma_est, stamp_amclPose) # test
             print "After--"
             print "mu_est",self.mu_est
             print "angle_est =", (self.mu_est[2,0]*180.0/np.pi), "deg"

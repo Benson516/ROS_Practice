@@ -278,7 +278,7 @@ class ROSInterface(object):
             # Reduced-order covariance matrix
             cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
             #
-            return (pose_2D, cov_2D)
+            return (pose_2D, cov_2D, self._amcl_poseStamp.stamp)
 
     def get_amcl_pose_tf(self):
         # Get pose_2D from tf to reduce the effect of delay
@@ -291,7 +291,10 @@ class ROSInterface(object):
             # Try tf
             try:
                 # From /map to /base_footprint
-                (trans, quaternion) = self.tf_listener.lookupTransform(self.map_frame,self.base_frame, rospy.Time(0))
+                # For outputing the stamp
+                stamp_amclPose = self.tf_listener.getLatestCommonTime(self.map_frame, self.base_frame)
+                #
+                (trans, quaternion) = self.tf_listener.lookupTransform(self.map_frame, self.base_frame, rospy.Time(0))
                 #
                 """
                 now = rospy.Time.now()
@@ -320,7 +323,7 @@ class ROSInterface(object):
             # Reduced-order covariance matrix
             cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
             #
-        return (pose_2D, cov_2D)
+        return (pose_2D, cov_2D, stamp_amclPose)
 
     def set_amcl_pose(self, pose_2D, cov_2D):
         #

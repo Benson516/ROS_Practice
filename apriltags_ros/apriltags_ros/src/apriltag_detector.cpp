@@ -174,14 +174,14 @@ int Cx = 0;
 int Cy = 0;
 cv::Rect roi_rect(0,0,1,1);
 // Speed estimation, pixel/sample
-double speed_filterRatio = 0.5;
+double speed_filterRatio = 0.3; // 0.5;
 double speed_x = 0;
 double speed_y = 0;
 // Parameters
 int x_border = 300; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
-int y_border = 20; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
-int ROI_height = 250; // 220; // 150; // 300;
-int ROI_width = 250; // 220; // 150; // 300;
+int y_border = 10; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
+int ROI_height = 300; // 220; // 150; // 300;
+int ROI_width = 300; // 220; // 150; // 300;
 double resize_scale = 1.0; // 2.0; // 1.2;
 // Sharpen
 double retain_ratio = 1.0; // 0.2;
@@ -304,11 +304,25 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
       if(count_tag_loss != 0){
         speed_x = 0.0;
         speed_y = 0.0;
-      }else{
+      }else{ 
+        //
+        if (speed_x == 0.0){
+            speed_x = double(Cx_last - Cx);
+        }else{
+            speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
+        }
+        //
+        if (speed_y == 0.0){
+            speed_y = double(Cy_last - Cy);
+        }else{
+            speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
+        }
+        //
         // speed_x = double(Cx_last - Cx);
         // speed_y = double(Cy_last - Cy);
-        speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
-        speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
+        //
+        // speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
+        // speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
       }
       //
       Cx = Cx_last + int(speed_x);
@@ -333,7 +347,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // cout << "gray_roi_enhanced.rows = " << gray_roi_enhanced.rows << ", gray_roi_enhanced.cols = " << gray_roi_enhanced.cols << "\n";
 
   // Detect the strength of the ambiant light
-  int Ker_size_half = 10;
+  int Ker_size_half = 20; // 10;
   cv::Size Ker_size(2*Ker_size_half+1, 2*Ker_size_half+1);
   cv::Mat gray_roi_light;
   cv::boxFilter(gray(roi_rect), gray_roi_light, -1, Ker_size);

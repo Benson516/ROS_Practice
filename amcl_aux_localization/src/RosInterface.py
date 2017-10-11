@@ -334,7 +334,7 @@ class ROSInterface(object):
         # Publish
         self._pub_init_amcl.publish(pose_cov_stamped_msg)
 
-    def set_amcl_pose_headerIn(self, pose_2D, cov_2D, header_in):
+    def set_amcl_pose_timeStampIn(self, pose_2D, cov_2D, timeStamp_in):
         #
         t = [pose_2D[0,0], pose_2D[1,0], 0.0]
         quaternion = tf.transformations.quaternion_from_euler(0.0, 0.0, pose_2D[2,0]) # raw, pitch, yaw
@@ -342,6 +342,6 @@ class ROSInterface(object):
         Cov_np = np.dot( np.dot( np.transpose(self._T_subState), cov_2D), self._T_subState )
         Cov = Cov_np.reshape(1,36).tolist()[0] # Convert to a python list (1-D)
         #
-        pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat_headerIn(t, quaternion, Cov, header_in)
+        pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat_timeStampIn(t, quaternion, Cov, timeStamp_in)
         # Publish
         self._pub_init_amcl.publish(pose_cov_stamped_msg)

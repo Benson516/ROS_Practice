@@ -45,7 +45,7 @@ class ROSInterface(object):
     Class used to interface with the rover. Gets sensor measurements through ROS subscribers,
     and transforms them into the 2D plane, and publishes velocity commands.
     """
-    def __init__(self, camera_frame_id, base_frame_id, map_frame_id, ns_tag_detector):
+    def __init__(self, camera_frame_id, base_frame_id, odom_frame_id, map_frame_id, ns_tag_detector):
         """
         Initialize the class
         """
@@ -60,6 +60,7 @@ class ROSInterface(object):
         # tf frames
         self.camera_frame = "/%s" % camera_frame_id # /usb_cam
         self.base_frame = "/%s" % base_frame_id # "/base_footprint"
+        self.odom_frame = "/%s" % odom_frame_id # "/odom"
         self.map_frame = "/%s" % map_frame_id # "/map"
         # Name space
         self.ns_tag_detector = "/%s" % ns_tag_detector #"/proc_image"
@@ -175,7 +176,7 @@ class ROSInterface(object):
                 (_t_tag_at_cam, _R_tag_2_cam) = get_t_R(posearray.detections[kk].pose.pose)
                 #
             #-----------------------------#
-            _angle_tag_at_bot = get_angle_tag_2_cam_from_R(_R_tag_2_cam, self.camera_top_and_tag_top)
+            _angle_tag_at_bot = get_angle_tag_2_bot_from_R_tag2cam(_R_tag_2_cam, self.camera_top_and_tag_top)
             if _angle_tag_at_bot is None:
                 continue
 
@@ -187,6 +188,71 @@ class ROSInterface(object):
         #
         return tag_list
 
+    def get_measurements_tf_directMethod(self):
+        """
+        Returns information about the last tag seen if any. Returns a list of Python list
+        in the format of (x,y,theta,id). Returns None if no new tag is seen.
+        """
+        if self.tag_Queue.empty():
+            return None
+        print "The size of tag_Queue:", self.tag_Queue.qsize()
+        # Else, get one element from queue
+        posearray = self.tag_Queue.get()
+        num_detections = len(posearray.detections)
+
+        # Note: all tags should be represented in robot's coordinate
+        tag_list = list()
+        for kk in range(num_detections): # range(self.num_detections):
+            #
+            _marker_num = posearray.detections[kk].id
+            tagFramName = "/tag_%d" % _marker_num
+            try:
+                # From /base_footprint to a tag
+                # (trans, quaternion) = self.tf_listener.lookupTransform( self.base_frame, tagFramName, rospy.Time(0))
+                """
+                now = rospy.Time.now()
+                self.tf_listener.waitForTransform(self.base_frame, tagFramName, now, rospy.Duration(0.5))
+                (trans, quaternion) = self.tf_listener.lookupTransform(self.base_frame,tagFramName, now)
+                """
+                # Intergrating the odom:
+                # The transformation method which will compensate the delay
+                # Since the tags are not moving, we can first project the tags to the /odom at the time they were discoverd,
+                # and then calculate the tranformation from /basefootprint to /odom at now
+                now = rospy.Time.now()
+                time_tag_was_found = self.tf_listener.getLatestCommonTime(self.camera_frame, tagFramName) # Note that its from /usb_cam to /tag_xx
+                self.tf_listener.waitForTransformFull(self.base_frame, now,
+                                                        tagFramName, time_tag_was_found,
+                                                        self.odom_frame, rospy.Duration(0.5))
+                (trans, quaternion) = self.tf_listener.lookupTransformFull(self.base_frame, now,
+                                                                            tagFramName, time_tag_was_found,
+                                                                            self.odom_frame)
+                print "--Successfully got the tf of the tag!!--"
+                # print "trans =", trans
+                _t_tag_at_bot = np.transpose(np.matrix([trans[0], trans[1], trans[2],1.0]))
+                # print "_t_tag_at_bot =", _t_tag_at_bot
+                _R_tag_2_bot = quaternion_matrix(quaternion)
+                _angle_tag_at_bot = get_angle_tag_2_bot_from_R_tag2bot(_R_tag_2_bot, self.camera_top_and_tag_top)
+                if _angle_tag_at_bot is None:
+                    continue
+            except: # (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                print "tf exception while getting measurements"
+                # continue
+                print "Use pose from message"
+                # Use the old data which is parsed at callback
+                # _t_tag_at_cam is in camera fram
+                (_t_tag_at_cam, _R_tag_2_cam) = get_t_R(posearray.detections[kk].pose.pose)
+                #
+                _t_tag_at_bot = np.dot(self._R_cam_2_bot, _t_tag_at_cam) + self._t_cam_at_bot
+                #
+                _angle_tag_at_bot = get_angle_tag_2_bot_from_R_tag2cam(_R_tag_2_cam, self.camera_top_and_tag_top)
+                if _angle_tag_at_bot is None:
+                    continue
+            #-----------------------------#
+            # A list of tag information
+            # Each item: [x, y, theta, id]
+            tag_list.append([_t_tag_at_bot[0,0], _t_tag_at_bot[1,0], _angle_tag_at_bot, _marker_num])
+        #
+        return tag_list
 
     def amcl_pose_CB(self, PoseWithCovarianceStamped):
         self._amcl_poseStamp = PoseWithCovarianceStamped.header
@@ -265,5 +331,17 @@ class ROSInterface(object):
         Cov = Cov_np.reshape(1,36).tolist()[0] # Convert to a python list (1-D)
         #
         pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat(t, quaternion, Cov)
+        # Publish
+        self._pub_init_amcl.publish(pose_cov_stamped_msg)
+
+    def set_amcl_pose_headerIn(self, pose_2D, cov_2D, header_in):
+        #
+        t = [pose_2D[0,0], pose_2D[1,0], 0.0]
+        quaternion = tf.transformations.quaternion_from_euler(0.0, 0.0, pose_2D[2,0]) # raw, pitch, yaw
+        #
+        Cov_np = np.dot( np.dot( np.transpose(self._T_subState), cov_2D), self._T_subState )
+        Cov = Cov_np.reshape(1,36).tolist()[0] # Convert to a python list (1-D)
+        #
+        pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat_headerIn(t, quaternion, Cov, header_in)
         # Publish
         self._pub_init_amcl.publish(pose_cov_stamped_msg)

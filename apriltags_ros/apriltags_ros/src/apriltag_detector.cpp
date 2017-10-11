@@ -112,8 +112,8 @@ cv::Rect convert_centerPoint_to_ROI(int Cx, int Cy, int width, int height, int x
 }
 // Scan through the entire image
 // Upperbound indexes to the point that is not included.
-void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0, int step_x=0, int step_y=0){
-    //
+void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int y_upperbound, int x_lowerBound=0, int y_lowerBound=0, int step_x=0, int step_y=0, int min_pixel=20){
+    // Default step: no overlapping between windows
     if (step_x <= 0){
       step_x = width;
     }
@@ -127,12 +127,13 @@ void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int
     int x_L = (Cx - half_width) + step_x;
     int y_L = Cy - half_height;
     //
-    if (x_L >= x_upperbound){
+    // int min_pixel = 20;
+    if (x_L >= (x_upperbound - min_pixel)){
         // To the next line
         x_L = x_lowerBound;
         y_L += step_y;
         //
-        if (y_L >= y_upperbound){
+        if (y_L >= (y_upperbound - min_pixel)){
             // To the left-top corner
             y_L = y_lowerBound;
         }
@@ -174,14 +175,14 @@ int Cx = 0;
 int Cy = 0;
 cv::Rect roi_rect(0,0,1,1);
 // Speed estimation, pixel/sample
-double speed_filterRatio = 0.5;
+double speed_filterRatio = 0.3; // 0.5;
 double speed_x = 0;
 double speed_y = 0;
 // Parameters
-int x_border = 300; // 280; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
-int y_border = 20; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
-int ROI_height = 250; // 220; // 150; // 300;
-int ROI_width = 250; // 220; // 150; // 300;
+int x_border = 300; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
+int y_border = 10; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
+int ROI_height = 300; // 220; // 150; // 300;
+int ROI_width = 300; // 220; // 150; // 300;
 double resize_scale = 1.0; // 2.0; // 1.2;
 // Sharpen
 double retain_ratio = 1.0; // 0.2;
@@ -270,27 +271,20 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
 
 
     //
-    /*
-    ROI_width_set = (nCol - 2*x_border)/3;
-    ROI_height_set = (nRow - 2*y_border)/3;
-    */
+    // ROI_width_set = (nCol - 2*x_border)/3;
+    // ROI_height_set = (nRow - 2*y_border)/3;
     ROI_width_set = ROI_width/2*3;
     ROI_height_set = ROI_height/2*3;
 
     //
-    /*
-    Cx = roi_rect.x + roi_rect.width/2;
-    Cy = roi_rect.y + roi_rect.height/2;
-    */
-
     // Move the ROI by z-type scan sequnce
     MoveTheROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border, (ROI_width_set), (ROI_height_set));
     // MoveTheROI(Cx, Cy, ROI_width_set, ROI_height_set, (nCol-x_border), (nRow-y_border), x_border, y_border, (ROI_width_set)/2, (ROI_height_set)/2);
 
 
     // Reset the speed
-    speed_x = 0;
-    speed_y = 0;
+    speed_x = 0.0;
+    speed_y = 0.0;
   }else{
     //
     if (detections.size() == 0){
@@ -309,13 +303,41 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
       int Cy_last = roi_rect.y + detections[0].cxy.second/resize_scale;
       //
       if(count_tag_loss != 0){
+        // The first time
         speed_x = 0.0;
         speed_y = 0.0;
-      }else{
+      }else{ // At least the second time
+
+        // For overcomeing the initial transient
+        if (speed_x == 0.0){
+            speed_x = double(Cx_last - Cx);
+        }else{
+            speed_x += speed_filterRatio*( double(Cx_last - Cx) );
+        }
+        //
+        if (speed_y == 0.0){
+            speed_y = double(Cy_last - Cy);
+        }else{
+            speed_y += speed_filterRatio*( double(Cy_last - Cy) );
+        }
+
+        // TODO Note: The following two lines are only true when the previous speeds are both zero
         // speed_x = double(Cx_last - Cx);
         // speed_y = double(Cy_last - Cy);
-        speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
-        speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
+
+        // TODO Note: the following two lines are wrong implementations.
+        // speed_x += speed_filterRatio*(double(Cx_last - Cx) - speed_x);
+        // speed_y += speed_filterRatio*(double(Cy_last - Cy) - speed_y);
+
+        /*
+        // TODO Note: The following are correct implementations.
+        // The controller for speed estimation
+        // The error is (the real position - the estimated position)
+        // Cx_last - Cx = (Cx_last - Cx_last_last) - speed_x_last
+        // --> This is actully a low pass filter for speed.
+        speed_x += speed_filterRatio*( double(Cx_last - Cx) );
+        speed_y += speed_filterRatio*( double(Cy_last - Cy) );
+        */
       }
       //
       Cx = Cx_last + int(speed_x);
@@ -340,7 +362,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // cout << "gray_roi_enhanced.rows = " << gray_roi_enhanced.rows << ", gray_roi_enhanced.cols = " << gray_roi_enhanced.cols << "\n";
 
   // Detect the strength of the ambiant light
-  int Ker_size_half = 10;
+  int Ker_size_half = 20; // 10;
   cv::Size Ker_size(2*Ker_size_half+1, 2*Ker_size_half+1);
   cv::Mat gray_roi_light;
   cv::boxFilter(gray(roi_rect), gray_roi_light, -1, Ker_size);

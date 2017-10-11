@@ -33,7 +33,7 @@ def get_t_R(pose):
     R = R_full
     return t,R
 
-def get_angle_tag_2_cam_from_R(_R_tag_2_cam, is_camera_top_and_tag_top):
+def get_angle_tag_2_bot_from_R_tag2cam(_R_tag_2_cam, is_camera_top_and_tag_top):
     # Modify the following lines if the tag is pasted on the ceil.
     # Return (-pi, pi]
     if is_camera_top_and_tag_top:
@@ -43,6 +43,23 @@ def get_angle_tag_2_cam_from_R(_R_tag_2_cam, is_camera_top_and_tag_top):
     else:
         # Case 2: The tags are pasted on the wall
         _angle_tag_2_bot = -np.arctan2(-_R_tag_2_cam[2,0], np.sqrt(_R_tag_2_cam[2,0]**2 + _R_tag_2_cam[2,2]**2))
+
+    # Prevent the sigularity
+    if math.isnan(_angle_tag_2_bot):
+        return None
+    else:
+        return _angle_tag_2_bot
+
+def get_angle_tag_2_bot_from_R_tag2bot(_R_tag_2_cam, is_camera_top_and_tag_top):
+    # Modify the following lines if the tag is pasted on the ceil.
+    # Return (-pi, pi]
+    if is_camera_top_and_tag_top:
+        # Case 1: The tags are pasted on the ceil
+        # _R_tag1_2_cam = self._R_tag_2_tag1.dot(_R_tag_2_cam)
+        _angle_tag_2_bot = np.arctan2(_R_tag_2_cam[1,1], _R_tag_2_cam[0,1])
+    else:
+        # Case 2: The tags are pasted on the wall
+        _angle_tag_2_bot = -np.arctan2(_R_tag_2_cam[1,2], _R_tag_2_cam[0,2])
 
     # Prevent the sigularity
     if math.isnan(_angle_tag_2_bot):
@@ -110,6 +127,33 @@ def make_pose_covariance_stamped_msg_quat(t, quat, Cov):
     #
     pose_cov_stamped_msg.header = Header()
     pose_cov_stamped_msg.header.stamp = rospy.Time.now()
+    #
+    pose_msg = Pose()
+    pose_msg.position.x = t[0]
+    pose_msg.position.y = t[1]
+    pose_msg.position.z = t[2]
+    #
+    # quat = quaternion_from_matrix(R)
+    # print "quat", quat
+    pose_msg.orientation.x = quat[0]
+    pose_msg.orientation.y = quat[1]
+    pose_msg.orientation.z = quat[2]
+    pose_msg.orientation.w = quat[3]
+    #
+    pose_cov_stamped_msg.pose.pose = pose_msg
+    pose_cov_stamped_msg.pose.covariance = Cov
+
+    return pose_cov_stamped_msg
+
+def make_pose_covariance_stamped_msg_quat_headerIn(t, quat, Cov, header_in):
+    """
+    Returns a pose stamped message from a translation vector and rotation matrix (4x4) for publishing.
+    NOTE: Does not set the target frame.
+    """
+    pose_cov_stamped_msg = PoseWithCovarianceStamped()
+    #
+    pose_cov_stamped_msg.header = header_in # Header()
+    # pose_cov_stamped_msg.header.stamp = rospy.Time.now()
     #
     pose_msg = Pose()
     pose_msg.position.x = t[0]

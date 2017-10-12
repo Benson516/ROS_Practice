@@ -293,6 +293,8 @@ class ROSInterface(object):
                 # From /map to /base_footprint
                 # For outputing the stamp
                 stamp_amclPose = self.tf_listener.getLatestCommonTime(self.map_frame, self.base_frame)
+                # stamp_amclPose = rospy.Time.now()
+                # print "~~~ Delay of the amcl_pose: ", (rospy.Time.now() - stamp_amclPose).to_sec(), "sec."
                 #
                 (trans, quaternion) = self.tf_listener.lookupTransform(self.map_frame, self.base_frame, rospy.Time(0))
                 #
@@ -315,6 +317,8 @@ class ROSInterface(object):
                 pose = self._amcl_pose
                 quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
                 euler = tf.transformations.euler_from_quaternion(quaternion)
+                #
+                stamp_amclPose = self._amcl_poseStamp.stamp
             #
             # roll = euler[0]
             # pitch = euler[1]

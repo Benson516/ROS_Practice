@@ -278,7 +278,7 @@ class ROSInterface(object):
             # Reduced-order covariance matrix
             cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
             #
-            return (pose_2D, cov_2D)
+            return (pose_2D, cov_2D, self._amcl_poseStamp.stamp)
 
     def get_amcl_pose_tf(self):
         # Get pose_2D from tf to reduce the effect of delay
@@ -291,7 +291,12 @@ class ROSInterface(object):
             # Try tf
             try:
                 # From /map to /base_footprint
-                (trans, quaternion) = self.tf_listener.lookupTransform(self.map_frame,self.base_frame, rospy.Time(0))
+                # For outputing the stamp
+                stamp_amclPose = self.tf_listener.getLatestCommonTime(self.map_frame, self.base_frame)
+                # stamp_amclPose = rospy.Time.now()
+                # print "~~~ Delay of the amcl_pose: ", (rospy.Time.now() - stamp_amclPose).to_sec(), "sec."
+                #
+                (trans, quaternion) = self.tf_listener.lookupTransform(self.map_frame, self.base_frame, rospy.Time(0))
                 #
                 """
                 now = rospy.Time.now()
@@ -312,6 +317,8 @@ class ROSInterface(object):
                 pose = self._amcl_pose
                 quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
                 euler = tf.transformations.euler_from_quaternion(quaternion)
+                #
+                stamp_amclPose = self._amcl_poseStamp.stamp
             #
             # roll = euler[0]
             # pitch = euler[1]
@@ -320,7 +327,7 @@ class ROSInterface(object):
             # Reduced-order covariance matrix
             cov_2D = np.dot(np.dot(self._T_subState, self._amcl_cov), np.transpose(self._T_subState) )
             #
-        return (pose_2D, cov_2D)
+        return (pose_2D, cov_2D, stamp_amclPose)
 
     def set_amcl_pose(self, pose_2D, cov_2D):
         #
@@ -334,7 +341,7 @@ class ROSInterface(object):
         # Publish
         self._pub_init_amcl.publish(pose_cov_stamped_msg)
 
-    def set_amcl_pose_headerIn(self, pose_2D, cov_2D, header_in):
+    def set_amcl_pose_timeStampIn(self, pose_2D, cov_2D, timeStamp_in):
         #
         t = [pose_2D[0,0], pose_2D[1,0], 0.0]
         quaternion = tf.transformations.quaternion_from_euler(0.0, 0.0, pose_2D[2,0]) # raw, pitch, yaw
@@ -342,6 +349,6 @@ class ROSInterface(object):
         Cov_np = np.dot( np.dot( np.transpose(self._T_subState), cov_2D), self._T_subState )
         Cov = Cov_np.reshape(1,36).tolist()[0] # Convert to a python list (1-D)
         #
-        pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat_headerIn(t, quaternion, Cov, header_in)
+        pose_cov_stamped_msg = make_pose_covariance_stamped_msg_quat_timeStampIn(t, quaternion, Cov, timeStamp_in)
         # Publish
         self._pub_init_amcl.publish(pose_cov_stamped_msg)

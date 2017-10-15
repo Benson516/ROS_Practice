@@ -126,17 +126,26 @@ void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int
     //
     int x_L = (Cx - half_width) + step_x;
     int y_L = Cy - half_height;
-    //
+
+    // Fix the range
+    if (x_L < x_lowerBound){
+      x_L = x_lowerBound;
+    }
+    if (y_L < y_lowerBound){
+      y_L = y_lowerBound;
+    }
+
     // int min_pixel = 20;
     if (x_L >= (x_upperbound - min_pixel)){
         // To the next line
         x_L = x_lowerBound;
         y_L += step_y;
         //
-        if (y_L >= (y_upperbound - min_pixel)){
-            // To the left-top corner
-            y_L = y_lowerBound;
-        }
+    }
+    //
+    if (y_L >= (y_upperbound - min_pixel)){
+        // To the left-top corner
+        y_L = y_lowerBound;
     }
 
     // Index saturation
@@ -362,7 +371,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // cout << "gray_roi_enhanced.rows = " << gray_roi_enhanced.rows << ", gray_roi_enhanced.cols = " << gray_roi_enhanced.cols << "\n";
 
   // Detect the strength of the ambiant light
-  int Ker_size_half = 20; // 10;
+  int Ker_size_half = 10;
   cv::Size Ker_size(2*Ker_size_half+1, 2*Ker_size_half+1);
   cv::Mat gray_roi_light;
   cv::boxFilter(gray(roi_rect), gray_roi_light, -1, Ker_size);

@@ -145,15 +145,15 @@ def make_pose_covariance_stamped_msg_quat(t, quat, Cov):
 
     return pose_cov_stamped_msg
 
-def make_pose_covariance_stamped_msg_quat_headerIn(t, quat, Cov, header_in):
+def make_pose_covariance_stamped_msg_quat_timeStampIn(t, quat, Cov, timeStamp_in):
     """
     Returns a pose stamped message from a translation vector and rotation matrix (4x4) for publishing.
     NOTE: Does not set the target frame.
     """
     pose_cov_stamped_msg = PoseWithCovarianceStamped()
     #
-    pose_cov_stamped_msg.header = header_in # Header()
-    # pose_cov_stamped_msg.header.stamp = rospy.Time.now()
+    pose_cov_stamped_msg.header = Header()
+    pose_cov_stamped_msg.header.stamp = timeStamp_in
     #
     pose_msg = Pose()
     pose_msg.position.x = t[0]

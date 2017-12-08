@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Image processing -->
+    <node name="usb_cam" pkg="cv_camera" type="cv_camera_node" output="screen">
+        <param name="file" value="/home/benson516/robot_720p_120fps_20171130.MP4" />
+        <param name="frame_id" value="usb_cam" />
+        <param name="rate" value="120" />
+    </node>
+
+
+</launch>

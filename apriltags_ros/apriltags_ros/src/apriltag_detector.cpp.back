@@ -20,10 +20,7 @@ using std::cout;
 
 namespace apriltags_ros{
 
-AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh):
-    it_(nh),
-    roi_rect(0,0,1,1)
-{
+AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): it_(nh){
   XmlRpc::XmlRpcValue april_tag_descriptions;
   if(!pnh.getParam("tag_descriptions", april_tag_descriptions)){
     ROS_WARN("No april tags specified");
@@ -68,58 +65,6 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh):
     tag_codes = &AprilTags::tagCodes36h11;
   }
 
-
-  // Global variables
-  //---------------------------------//
-  // TODO: make these variables into the class
-  // std::vector<AprilTags::TagDetection>	detections;
-  count_tag_loss = 100;
-  count_idle_status = 0;
-  // ROI
-  Cx = 0;
-  Cy = 0;
-  // cv::Rect roi_rect(0,0,1,1);
-  // Speed estimation, pixel/sample
-  speed_x = 0;
-  speed_y = 0;
-
-  // Parameters
-  // ROI
-  x_border = 300; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
-  y_border = 10; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
-  ROI_height = 300; // 220; // 150; // 300;
-  ROI_width = 300; // 220; // 150; // 300;
-  // ROI for initial scan
-  ROI_height_scan = ROI_height/2*3; // For initial scan // ROI_height/2*3;
-  ROI_width_scan = ROI_width/2*3; // For initial scan // ROI_width/2*3;
-  // Resize
-  resize_scale = 1.0; // 2.0; // 1.2;
-  // Speed filter
-  speed_filterRatio = 0.3; // 0.5;
-  // Average light
-  lightSense_Ker_halfSize = 10; // 10;
-  average_light_level = 127; // 127
-  // Sharpen
-  // sharpen_retain_ratio = 1.0; // 0.2;
-  // sharpen_enhancement_ratio = 2.0; // 12.0; // 6.0
-  //---------------------------------//
-
-  // Param_name, variable_set, default_value
-  pnh.param<int>("x_border", x_border, x_border);
-  pnh.param<int>("y_border", y_border, y_border);
-  pnh.param<int>("ROI_height", ROI_height, ROI_height);
-  pnh.param<int>("ROI_width", ROI_width, ROI_width);
-  pnh.param<int>("ROI_height_scan", ROI_height_scan, ROI_height_scan);
-  pnh.param<int>("ROI_width_scan", ROI_width_scan, ROI_width_scan);
-  pnh.param<double>("resize_scale", resize_scale, resize_scale);
-  pnh.param<double>("speed_filterRatio", speed_filterRatio, speed_filterRatio);
-  pnh.param<int>("lightSense_Ker_halfSize", lightSense_Ker_halfSize, lightSense_Ker_halfSize);
-  pnh.param<int>("average_light_level", average_light_level, average_light_level);
-  // pnh.param<double>("sharpen_retain_ratio", sharpen_retain_ratio, sharpen_retain_ratio);
-  // pnh.param<double>("sharpen_enhancement_ratio", sharpen_enhancement_ratio, sharpen_enhancement_ratio);
-
-
-  //
   tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
   // AprilTags::TagCodes tag_codes = AprilTags::tagCodes36h11;
   // tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(tag_codes));
@@ -127,10 +72,7 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh):
   image_pub_ = it_.advertise("tag_detections_image", 1);
   detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
-  //
-
 }
-
 AprilTagDetector::~AprilTagDetector(){
   image_sub_.shutdown();
 }
@@ -231,7 +173,7 @@ void MoveTheROI(int &Cx, int &Cy, int &width, int &height, int x_upperbound, int
 //////////////////////////// Utilities
 
 
-/*
+
 // Global variables
 // TODO: make these variables into the class
 std::vector<AprilTags::TagDetection>	detections;
@@ -246,16 +188,16 @@ double speed_filterRatio = 0.3; // 0.5;
 double speed_x = 0;
 double speed_y = 0;
 // Parameters
-int x_border = 300; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
-int y_border = 10; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
+int x_border = 0; // To reduce the effectness region in the odriginal image in x-direction. Double-sided
+int y_border = 0; // To reduce the effectness region in the odriginal image in y-direction. Double-sided
 int ROI_height = 300; // 220; // 150; // 300;
 int ROI_width = 300; // 220; // 150; // 300;
 double resize_scale = 1.0; // 2.0; // 1.2;
 // Sharpen
-double sharpen_retain_ratio = 1.0; // 0.2;
-double sharpen_enhancement_ratio = 2.0; // 12.0; // 6.0
+double retain_ratio = 1.0; // 0.2;
+double enhancement_ratio = 2.0; // 12.0; // 6.0
 //
-*/
+
 
 void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info){
   // Get the (raw) image
@@ -340,13 +282,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
     //
     // ROI_width_set = (nCol - 2*x_border)/3;
     // ROI_height_set = (nRow - 2*y_border)/3;
-    /*
     ROI_width_set = ROI_width/2*3;
     ROI_height_set = ROI_height/2*3;
-    */
-    ROI_width_set = ROI_width_scan;
-    ROI_height_set = ROI_height_scan;
-
 
     //
     // Move the ROI by z-type scan sequnce
@@ -434,12 +371,12 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   // cout << "gray_roi_enhanced.rows = " << gray_roi_enhanced.rows << ", gray_roi_enhanced.cols = " << gray_roi_enhanced.cols << "\n";
 
   // Detect the strength of the ambiant light
-  // int lightSense_Ker_halfSize = 10;
-  cv::Size Ker_size(2*lightSense_Ker_halfSize+1, 2*lightSense_Ker_halfSize+1);
+  int Ker_size_half = 10;
+  cv::Size Ker_size(2*Ker_size_half+1, 2*Ker_size_half+1);
   cv::Mat gray_roi_light;
   cv::boxFilter(gray(roi_rect), gray_roi_light, -1, Ker_size);
   //
-  divide(gray(roi_rect), gray_roi_light, gray_averageLight, average_light_level , -1);
+  divide(gray(roi_rect), gray_roi_light, gray_averageLight, 127 , -1);
   // For test
   // gray_roi_enhanced = gray_roi_light;
   // equalizeHist(gray_averageLight, gray_roi_enhanced);
@@ -458,7 +395,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
   /*
   cv::Mat gray_roi_enhanced;
   cv::GaussianBlur(gray_roi_resize, gray_roi_enhanced, cv::Size(0, 0), 3); // sigma = 3
-  cv::addWeighted(gray_roi_resize, (sharpen_retain_ratio + sharpen_enhancement_ratio), gray_roi_enhanced, (-sharpen_enhancement_ratio), 0, gray_roi_enhanced); // 1 + 0.5*(1-blur)
+  cv::addWeighted(gray_roi_resize, (retain_ratio + enhancement_ratio), gray_roi_enhanced, (-enhancement_ratio), 0, gray_roi_enhanced); // 1 + 0.5*(1-blur)
   */
 
 
@@ -467,6 +404,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg,const senso
 
   // Extract the tags
   ///////////////////////////////
+  // detections = tag_detector_->extractTags(gray);
   // detections = tag_detector_->extractTags(gray_roi);
   detections = tag_detector_->extractTags(gray_roi_resize);
   // detections = tag_detector_->extractTags(gray_roi_enhanced);

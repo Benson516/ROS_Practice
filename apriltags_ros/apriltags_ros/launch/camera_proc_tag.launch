@@ -1,31 +1,48 @@
 <?xml version="1.0"?>
 <launch>
-   <!-- Is going to show images -->
-   <arg name="is_image_view"  default="true"/>
+    <!-- Is going to show images -->
+    <arg name="is_image_view"  default="false"/>
+    <arg name="is_simulation"  default="false" />
 
-    <!-- USB Camera -->
-    <!-- include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" / -->
-    <include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0_1280_720.launch" />
+    <!-- Parameters -->
+    <arg name="ns_usb_cam"  default="usb_cam"/> <!-- usb_cam -->
+    <arg name="camera_launch_file" default="usb_cam_IZONE_ver2_640_480.launch" /> <!-- usb_night_cam_video0_1280_720.launch -->
+
+    <arg name="camera_dev"  default="video0" />
+    <arg name="frame_rate"  default="10" />
+
+
+    <group unless="$(arg is_simulation)">
+        <!-- USB Camera -->
+        <!-- include file="$(find apriltags_ros)/launch/camera_launch/usb_night_cam_video0.launch" / -->
+        <include file="$(find apriltags_ros)/launch/camera_launch/$(arg camera_launch_file)" >
+            <arg name="ns_usb_cam" value="$(arg ns_usb_cam)" />
+            <arg name="camera_dev" value="$(arg camera_dev)" />
+            <arg name="frame_rate" value="$(arg frame_rate)" />
+        </include>
+    </group>
 
     <!-- Image processing -->
-    <node pkg="image_proc" type="image_proc" name="image_proc" output="screen" ns="usb_cam">
+    <node pkg="image_proc" type="image_proc" name="image_proc" output="screen" ns="$(arg ns_usb_cam)">
         <!-- remap from="image_raw" to="image_crop"/ -->
     </node>
 
     <!-- Apriltag detection -->
-    <include file="$(find apriltags_ros)/launch/tag_detection.launch" />
+    <include file="$(find apriltags_ros)/launch/tag_detection.launch" >
+        <arg name="ns_tag_detection" value="$(arg ns_usb_cam)" />
+    </include>
 
 
     <!-- View images -->
     <group if="$(arg is_image_view)">
         <!-- Image view -->
         <node name="image_view_usb_cam" pkg="image_view" type="image_view" respawn="false" output="screen">
-          <remap from="image" to="/usb_cam/image_raw"/>
+          <remap from="image" to="/$(arg ns_usb_cam)/image_raw"/>
           <param name="autosize" value="false" />
         </node>
 
         <node name="image_view_crop" pkg="image_view" type="image_view" respawn="false" output="screen">
-          <remap from="image" to="/usb_cam/tag_detections_image"/>
+          <remap from="image" to="/$(arg ns_usb_cam)/tag_detections_image"/>
           <param name="autosize" value="false" />
         </node>
 

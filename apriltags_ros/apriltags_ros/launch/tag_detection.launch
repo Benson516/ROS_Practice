@@ -13,14 +13,28 @@
     <param name="tag_family" type="str" value="36h11" />
 
 
+    <!-- Parameters -->
+    <param name="x_border"                  value="0" /> <!-- 300 -->
+    <param name="y_border"                  value="0" />  <!-- 10 -->
+    <param name="ROI_height"                value="300" /> <!--300 -->
+    <param name="ROI_width"                 value="300" /> <!-- 300 -->
+    <param name="ROI_height_scan"           value="480" /> <!-- 450 -->
+    <param name="ROI_width_scan"            value="640" /> <!-- 450 -->
+    <param name="resize_scale"              value="1.0" /> <!-- 1.0 -->
+    <param name="speed_filterRatio"         value="0.3" /> <!-- 0.3 -->
+    <param name="lightSense_Ker_halfSize"   value="10" /> <!-- 10 -->
+    <param name="average_light_level"       value="127" /> <!-- 127 -->
+
+
+
     <!-- Enable projected optical measurements for more accurate tag transformations -->
     <!-- This exists for backwards compatability and should be left true for new setups -->
     <!-- param name="projected_optics" type="bool" value="true" / -->
 
 
     <rosparam param="tag_descriptions">[
-      {id: 0, size: 0.0641},
-      {id: 1, size: 0.0641},
+      {id: 0, size: 0.0342},
+      {id: 1, size: 0.0465},
       {id: 2, size: 0.1157},
       {id: 3, size: 0.1157},
       {id: 4, size: 0.1155},

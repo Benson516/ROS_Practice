@@ -1,0 +1,20 @@
+image_width: 640
+image_height: 480
+camera_name: usb_cam_IZONE_ver2_640_480
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [577.5954859969931, 0, 330.8086691673487, 0, 576.6198871577669, 281.8315582852988, 0, 0, 1]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [-0.4606814696154379, 0.2044404672459305, -0.006865643411904557, 0.002136542186312354, 0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [482.4270935058594, 0, 337.5232097815915, 0, 0, 523.5869750976562, 287.2326772945526, 0, 0, 0, 1, 0]

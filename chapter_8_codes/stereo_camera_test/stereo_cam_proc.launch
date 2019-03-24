@@ -1,0 +1,40 @@
+<launch>
+
+    <arg name="is_image_view" default="false"/>
+
+    <arg name="stereo_ns" default="stereo_1"/>
+    <arg name="left_camera_frame" default="camera_link"/>
+
+
+    <node pkg="uvc_camera" type="uvc_stereo_node" name="uvc_camera_stereo" ns="$(arg stereo_ns)">
+        <param name="width"         type="int" value="640" />
+        <param name="height"        type="int" value="480" />
+        <param name="fps"           type="int" value="10" />
+        <param name="frame_id"      type="string" value="$(arg left_camera_frame)" />
+
+        <param name="skip_frames"    type="int" value="0" />
+        <!-- other supported params: auto_exposure, exposure_absolute, brightness, power_line_frequency -->
+
+        <param name="left/device"   type="string" value="$(env HOME)/symlinkForCamera/symVideoStereoLeft" />
+        <param name="right/device"  type="string" value="$(env HOME)/symlinkForCamera/symVideoStereoRight" />
+        <!-- param name="left/camera_info_url" type="string" value="file://$(find uvc_camera)/example-left.yaml" / -->
+        <!-- param name="right/camera_info_url" type="string" value="file://$(find uvc_camera)/example-right.yaml" / -->
+    </node>
+
+
+    <node pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="$(arg stereo_ns)">
+    </node>
+
+    <!-- Rotate the camera frame. -->
+    <arg name="pi/2" value="1.5707963267948966" />
+    <arg name="optical_rotate" value="0 0 1.0 -$(arg pi/2) 0 -$(arg pi/2)" />
+    <node pkg="tf" type="static_transform_publisher" name="camera_base_link" args="$(arg optical_rotate) base_link $(arg left_camera_frame) 100" />  
+    
+
+    <group if="$(arg is_image_view)">
+        <node pkg="image_view" type="stereo_view" name="stereo_view" args="stereo:=/$(arg stereo_ns) image:=image_rect_color">
+        </node>
+    </group>
+
+
+</launch>
